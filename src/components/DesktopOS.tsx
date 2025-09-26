@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import honeycombWallpaper from '../assets/honeycomb-wallpaper.png';
 import DesktopHeader from './DesktopHeader';
 import DesktopFooter from './DesktopFooter';
@@ -8,7 +8,14 @@ import ChatPanel from './ChatPanel';
 type ChatMode = 'collapsed' | 'standard' | 'expanded';
 
 const DesktopOS = () => {
-  const [chatMode, setChatMode] = useState<ChatMode>('expanded');
+  const [chatMode, setChatMode] = useState<ChatMode>(() => {
+    const savedPreference = localStorage.getItem('chatMode') as ChatMode;
+    return savedPreference || 'standard';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('chatMode', chatMode);
+  }, [chatMode]);
 
   return (
     <div 
