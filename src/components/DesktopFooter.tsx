@@ -1,12 +1,14 @@
-import { Home, Search, Settings, Grid3X3, Users } from 'lucide-react';
+import { Home, Search, Settings, Grid3X3, User } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
 
 const DesktopFooter = () => {
+  const navigate = useNavigate();
+  
   const taskbarItems = [
     { icon: Home, label: 'Home' },
     { icon: Search, label: 'Search' },
     { icon: Grid3X3, label: 'Apps' },
-    { icon: Users, label: 'Users' },
   ];
 
   return (
@@ -21,6 +23,15 @@ const DesktopFooter = () => {
             <item.icon className="h-6 w-6 text-foreground group-hover:text-primary transition-colors" />
           </button>
         ))}
+        
+        {/* User Button */}
+        <button
+          onClick={() => navigate('/user')}
+          className="flex items-center justify-center w-12 h-12 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
+          title="ai.You"
+        >
+          <User className="h-6 w-6 text-foreground group-hover:text-primary transition-colors" />
+        </button>
         
         {/* Settings Dropdown */}
         <DropdownMenu>
