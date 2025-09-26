@@ -149,7 +149,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
   };
 
   return (
-    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm border-r border-border flex transition-all duration-300 relative overflow-hidden`}>
+    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm ${mode === 'expanded' ? 'border-l border-border' : 'border-r border-border'} flex transition-all duration-300 relative overflow-hidden`}>
       {/* History Sidebar - Only in expanded mode when history is open */}
       {mode === 'expanded' && isHistoryOpen && (
         <div className="w-64 h-full bg-background border-r border-border flex flex-col flex-shrink-0">
