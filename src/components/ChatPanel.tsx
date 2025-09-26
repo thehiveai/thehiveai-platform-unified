@@ -176,16 +176,15 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
               <div className="flex items-center gap-2">
                 <Button 
                   variant="ghost" 
-                  size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} 
+                  size="icon"
                   title="Chat History"
                   onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                 >
                   <History className="h-4 w-4" />
-                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">History</span>}
                 </Button>
                 <Button 
                   variant="ghost" 
-                  size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} 
+                  size="icon"
                   title="AI Model Selector"
                   onClick={() => {
                     if (mode === 'expanded' || mode === 'fullscreen') {
@@ -194,16 +193,13 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                   }}
                 >
                   <Brain className="h-4 w-4" />
-                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Model</span>}
                   {(mode === 'expanded' || mode === 'fullscreen') && <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />}
                 </Button>
-                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Personality">
+                <Button variant="ghost" size="icon" title="Personality">
                   <User className="h-4 w-4" />
-                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Personality</span>}
                 </Button>
-                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Settings">
+                <Button variant="ghost" size="icon" title="Settings">
                   <Settings className="h-4 w-4" />
-                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Settings</span>}
                 </Button>
           </div>
 
