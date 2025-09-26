@@ -1,5 +1,6 @@
-import { Clock, Wifi, Battery, Volume2 } from 'lucide-react';
+import { Clock, Bug, BookOpen, HelpCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import hiveAILogo from '../assets/hive-ai-logo.png';
 
 const DesktopHeader = () => {
@@ -37,9 +38,36 @@ const DesktopHeader = () => {
       
       <div className="flex items-center gap-4 text-sm text-foreground">
         <div className="flex items-center gap-2">
-          <Wifi className="h-4 w-4" />
-          <Volume2 className="h-4 w-4" />
-          <Battery className="h-4 w-4" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="hover:text-primary transition-colors">
+                <Bug className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Bug Report</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="hover:text-primary transition-colors">
+                <BookOpen className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Knowledge Base</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="hover:text-primary transition-colors">
+                <HelpCircle className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Get Help</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4" />
