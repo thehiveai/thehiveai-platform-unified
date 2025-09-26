@@ -23,23 +23,11 @@ const DesktopOS = () => {
     >
       <DesktopHeader />
       <div className="flex-1 flex">
-        {chatMode === 'expanded' ? (
-          <>
-            <DesktopMain />
-            <ChatPanel 
-              mode={chatMode}
-              onModeChange={setChatMode}
-            />
-          </>
-        ) : (
-          <>
-            <ChatPanel 
-              mode={chatMode}
-              onModeChange={setChatMode}
-            />
-            <DesktopMain />
-          </>
-        )}
+        <ChatPanel 
+          mode={chatMode}
+          onModeChange={setChatMode}
+        />
+        {chatMode !== 'expanded' && <DesktopMain />}
       </div>
       <DesktopFooter />
     </div>
