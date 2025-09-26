@@ -10,7 +10,7 @@ const DesktopOS = () => {
 
   return (
     <div 
-      className="min-h-screen w-full flex"
+      className="min-h-screen w-full flex flex-col"
       style={{ 
         backgroundImage: `url(${honeycombWallpaper})`,
         backgroundSize: 'cover',
@@ -19,15 +19,15 @@ const DesktopOS = () => {
         backgroundAttachment: 'fixed'
       }}
     >
-      <ChatPanel 
-        isExpanded={isChatExpanded} 
-        onToggle={() => setIsChatExpanded(!isChatExpanded)} 
-      />
-      <div className="flex-1 flex flex-col">
-        <DesktopHeader />
+      <DesktopHeader />
+      <div className="flex-1 flex">
+        <ChatPanel 
+          isExpanded={isChatExpanded} 
+          onToggle={() => setIsChatExpanded(!isChatExpanded)} 
+        />
         <DesktopMain />
-        <DesktopFooter />
       </div>
+      <DesktopFooter />
     </div>
   );
 };

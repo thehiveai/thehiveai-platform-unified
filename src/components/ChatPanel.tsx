@@ -73,7 +73,7 @@ const ChatPanel = ({ isExpanded, onToggle }: ChatPanelProps) => {
   };
 
   return (
-    <div className={`${isExpanded ? 'w-80' : 'w-12'} h-screen bg-background/95 backdrop-blur-sm border-r border-border flex flex-col transition-all duration-300 relative`}>
+    <div className={`${isExpanded ? 'w-80' : 'w-12'} h-full bg-background/95 backdrop-blur-sm border-r border-border flex flex-col transition-all duration-300 relative`}>
       {/* Toggle Button */}
       <Button
         onClick={onToggle}
