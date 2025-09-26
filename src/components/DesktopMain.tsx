@@ -1,10 +1,21 @@
+import buddyBee from '../assets/buddy-bee.png';
+
 const DesktopMain = () => {
   return (
     <main className="flex-1">
       <div className="h-full w-full flex items-center justify-center p-8">
-        <div className="text-center text-foreground/60">
-          <h2 className="text-2xl font-semibold mb-2">Welcome to Hive OS</h2>
-          <p className="text-lg">Your web-based desktop environment</p>
+        <div className="flex items-center gap-8">
+          <div className="text-center text-foreground">
+            <h2 className="text-4xl font-bold mb-4 text-primary">Welcome to the Hive AI Platform</h2>
+            <p className="text-xl text-muted-foreground">Intelligence for Work & Play</p>
+          </div>
+          <div className="buddy-bee-animate">
+            <img 
+              src={buddyBee} 
+              alt="Buddy Bee" 
+              className="h-24 w-24 buddy-bee-wings"
+            />
+          </div>
         </div>
       </div>
     </main>
