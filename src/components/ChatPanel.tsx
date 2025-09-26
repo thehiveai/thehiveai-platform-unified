@@ -141,7 +141,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
 
   return (
     <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm ${mode !== 'fullscreen' ? 'border-r border-border' : ''} flex transition-all duration-300 relative overflow-hidden`}>
-      {/* History Sidebar */}
+      {/* History Sidebar - Only in expanded/fullscreen mode */}
       {(mode === 'expanded' || mode === 'fullscreen') && isHistoryOpen && (
         <div className="w-64 h-full bg-background border-r border-border flex flex-col flex-shrink-0">
           <HistorySidebar 
@@ -211,7 +211,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
             </div>
           </div>
 
-          {/* Model Selection Toolbar - Separate toolbar underneath */}
+          {/* Model Selection Toolbar - Only in expanded/fullscreen mode */}
           {(mode === 'expanded' || mode === 'fullscreen') && isModelToolbarOpen && (
             <div className="border-b border-border bg-background/50 backdrop-blur-sm transition-all duration-300">
               <div className="p-4 flex items-center gap-4">
