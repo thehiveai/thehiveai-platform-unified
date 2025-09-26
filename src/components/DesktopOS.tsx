@@ -5,8 +5,10 @@ import DesktopFooter from './DesktopFooter';
 import DesktopMain from './DesktopMain';
 import ChatPanel from './ChatPanel';
 
+type ChatMode = 'collapsed' | 'expanded' | 'fullscreen';
+
 const DesktopOS = () => {
-  const [isChatExpanded, setIsChatExpanded] = useState(true);
+  const [chatMode, setChatMode] = useState<ChatMode>('expanded');
 
   return (
     <div 
@@ -22,10 +24,10 @@ const DesktopOS = () => {
       <DesktopHeader />
       <div className="flex-1 flex">
         <ChatPanel 
-          isExpanded={isChatExpanded} 
-          onToggle={() => setIsChatExpanded(!isChatExpanded)} 
+          mode={chatMode}
+          onModeChange={setChatMode}
         />
-        <DesktopMain />
+        {chatMode !== 'fullscreen' && <DesktopMain />}
       </div>
       <DesktopFooter />
     </div>

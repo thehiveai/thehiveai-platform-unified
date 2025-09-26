@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,12 +11,14 @@ interface Message {
   timestamp: Date;
 }
 
+type ChatMode = 'collapsed' | 'expanded' | 'fullscreen';
+
 interface ChatPanelProps {
-  isExpanded: boolean;
-  onToggle: () => void;
+  mode: ChatMode;
+  onModeChange: (mode: ChatMode) => void;
 }
 
-const ChatPanel = ({ isExpanded, onToggle }: ChatPanelProps) => {
+const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -72,25 +74,51 @@ const ChatPanel = ({ isExpanded, onToggle }: ChatPanelProps) => {
     return date.toLocaleDateString();
   };
 
-  return (
-    <div className={`${isExpanded ? 'w-80' : 'w-12'} h-full bg-background/95 backdrop-blur-sm border-r border-border flex flex-col transition-all duration-300 relative`}>
-      {/* Toggle Button */}
-      <Button
-        onClick={onToggle}
-        variant="ghost"
-        size="icon"
-        className="absolute top-4 -right-3 z-50 bg-background border border-border rounded-full shadow-md hover:bg-secondary"
-      >
-        {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-      </Button>
+  const getNextMode = (): ChatMode => {
+    switch (mode) {
+      case 'collapsed': return 'expanded';
+      case 'expanded': return 'fullscreen';
+      case 'fullscreen': return 'collapsed';
+    }
+  };
 
-      {isExpanded ? (
+  const getWidthClass = () => {
+    switch (mode) {
+      case 'collapsed': return 'w-12';
+      case 'expanded': return 'w-80';
+      case 'fullscreen': return 'w-full';
+    }
+  };
+
+  return (
+    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm border-r border-border flex flex-col transition-all duration-300 relative`}>
+      {/* Toggle Buttons */}
+      <div className="absolute top-4 -right-3 z-50 flex flex-col gap-1">
+        <Button
+          onClick={() => onModeChange(getNextMode())}
+          variant="ghost"
+          size="icon"
+          className="bg-background border border-border rounded-full shadow-md hover:bg-secondary"
+          title={`Switch to ${getNextMode()} mode`}
+        >
+          {mode === 'collapsed' ? <ChevronRight className="h-4 w-4" /> : 
+           mode === 'expanded' ? <Maximize2 className="h-4 w-4" /> : 
+           <Minimize2 className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {mode !== 'collapsed' ? (
         <>
           {/* Header */}
           <div className="p-4 border-b border-border">
             <div className="flex items-center gap-2 mb-2">
               <MessageSquare className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold text-foreground">Hive OS</h2>
+              {mode === 'fullscreen' && (
+                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
+                  Fullscreen
+                </span>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">AI Assistant</p>
           </div>
