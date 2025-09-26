@@ -1,4 +1,4 @@
-import { Home, Search, Settings, Grid3X3, User, ChevronRight } from 'lucide-react';
+import { Home, Search, Settings, Grid3X3, User } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -100,9 +100,8 @@ const DesktopFooter = () => {
             <DropdownMenuSeparator />
             {appCategories.map((category, index) => (
               <DropdownMenuSub key={index}>
-                <DropdownMenuSubTrigger className="flex items-center gap-2">
+                <DropdownMenuSubTrigger>
                   <span className="font-medium">{category.name}</span>
-                  <ChevronRight className="h-4 w-4 ml-auto" />
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="w-48">
                   <div className="px-2 py-1 text-xs text-muted-foreground mb-1">
