@@ -2,6 +2,7 @@ import honeycombWallpaper from '../assets/honeycomb-wallpaper.png';
 import DesktopHeader from './DesktopHeader';
 import DesktopFooter from './DesktopFooter';
 import DesktopMain from './DesktopMain';
+import ChatPanel from './ChatPanel';
 
 const DesktopOS = () => {
   return (
@@ -16,7 +17,12 @@ const DesktopOS = () => {
       }}
     >
       <DesktopHeader />
-      <DesktopMain />
+      <div className="flex-1 flex">
+        <ChatPanel />
+        <div className="flex-1 flex flex-col">
+          <DesktopMain />
+        </div>
+      </div>
       <DesktopFooter />
     </div>
   );
