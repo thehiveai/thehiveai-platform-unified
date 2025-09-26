@@ -1,4 +1,4 @@
-import buddyBee from '../assets/buddy-bee.png';
+import buddyBee from '../assets/buddy-bee-ref3.png';
 
 const DesktopMain = () => {
   return (
