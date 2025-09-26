@@ -5,7 +5,7 @@ import DesktopFooter from './DesktopFooter';
 import DesktopMain from './DesktopMain';
 import ChatPanel from './ChatPanel';
 
-type ChatMode = 'collapsed' | 'expanded' | 'fullscreen';
+type ChatMode = 'collapsed' | 'standard' | 'expanded' | 'fullscreen';
 
 const DesktopOS = () => {
   const [chatMode, setChatMode] = useState<ChatMode>('expanded');
