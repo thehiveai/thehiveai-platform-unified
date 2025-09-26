@@ -109,7 +109,19 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
   };
 
   return (
-    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm ${mode !== 'fullscreen' ? 'border-r border-border' : ''} flex flex-col transition-all duration-300 relative overflow-hidden`}>
+    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm ${mode !== 'fullscreen' ? 'border-r border-border' : ''} flex transition-all duration-300 relative overflow-hidden`}>
+      {/* History Sidebar */}
+      {(mode === 'expanded' || mode === 'fullscreen') && isHistoryOpen && (
+        <div className="w-64 h-full bg-background border-r border-border flex flex-col flex-shrink-0">
+          <HistorySidebar 
+            isOpen={true}
+            onClose={() => setIsHistoryOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* Main Chat Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* Toggle Buttons */}
       <div className="absolute top-4 -right-3 z-50 flex flex-col gap-1">
         <Button
@@ -258,15 +270,8 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           </Popover>
           <MessageSquare className="h-6 w-6 text-primary" />
         </div>
-      )}
-
-      {/* History Sidebar */}
-      {(mode === 'expanded' || mode === 'fullscreen') && (
-        <HistorySidebar 
-          isOpen={isHistoryOpen}
-          onClose={() => setIsHistoryOpen(false)}
-        />
-      )}
+        )}
+      </div>
     </div>
   );
 };

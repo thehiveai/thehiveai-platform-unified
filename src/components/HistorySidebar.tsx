@@ -47,10 +47,8 @@ const HistorySidebar = ({ isOpen, onClose }: HistorySidebarProps) => {
     return groups;
   }, {} as Record<string, ChatHistory[]>);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="absolute top-0 left-0 w-64 h-full bg-background border-r border-border z-40 flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
