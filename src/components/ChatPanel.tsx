@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2, History, Brain, User, Settings, Paperclip, Type, Mic, MessageCircle } from 'lucide-react';
+import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2, History, Brain, User, Settings, Paperclip, Type, Mic, MessageCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -220,7 +220,16 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           </div>
 
           {/* Bottom Toolbar */}
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 space-y-2">
+            {/* New Chat Button */}
+            <div className="flex justify-center">
+              <Button variant="default" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="New Chat" className="bg-primary">
+                <Plus className="h-4 w-4" />
+                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">New Chat</span>}
+              </Button>
+            </div>
+            
+            {/* Action Buttons */}
             <div className="flex items-center justify-center gap-2">
               <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Attach Files">
                 <Paperclip className="h-4 w-4" />
