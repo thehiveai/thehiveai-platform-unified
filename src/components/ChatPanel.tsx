@@ -337,7 +337,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
                   Recent Chats
                 </div>
-                {recentChats.map((chatTitle, index) => (
+                {recentChats.slice(0, 10).map((chatTitle, index) => (
                   <Button
                     key={index}
                     variant="ghost"
