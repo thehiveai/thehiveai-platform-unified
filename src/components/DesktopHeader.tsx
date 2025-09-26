@@ -1,5 +1,6 @@
 import { Clock, Wifi, Battery, Volume2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import hiveAILogo from '../assets/hive-ai-logo.png';
 
 const DesktopHeader = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -31,7 +32,7 @@ const DesktopHeader = () => {
   return (
     <header className="h-12 bg-background/80 backdrop-blur-sm border-b border-border px-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className="text-lg font-bold text-primary">Hive OS</div>
+        <img src={hiveAILogo} alt="Hive AI" className="h-8 w-auto" />
       </div>
       
       <div className="flex items-center gap-4 text-sm text-foreground">
