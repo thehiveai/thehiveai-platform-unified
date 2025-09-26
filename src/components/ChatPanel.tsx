@@ -179,7 +179,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
 
         {mode === 'collapsed' ? (
           /* Collapsed Mode - Only icon dropdowns */
-          <div className="flex flex-col items-center pt-8 gap-3 h-full">
+          <div className="flex flex-col items-center pt-16 gap-3 h-full">
             {/* Chat History Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
