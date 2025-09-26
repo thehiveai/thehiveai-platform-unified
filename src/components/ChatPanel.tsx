@@ -281,26 +281,28 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <div className="flex items-center gap-2">
                   <Button 
                     variant="ghost" 
-                    size="icon"
-                    title="Chat History"
+                    size="sm"
                     onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                   >
-                    <History className="h-4 w-4" />
+                    <History className="h-4 w-4 mr-1" />
+                    History
                   </Button>
                   <Button 
                     variant="ghost" 
-                    size="icon"
-                    title="AI Model Selector"
+                    size="sm"
                     onClick={() => setIsModelToolbarOpen(!isModelToolbarOpen)}
                   >
-                    <Brain className="h-4 w-4" />
+                    <Brain className="h-4 w-4 mr-1" />
+                    Model
                     <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />
                   </Button>
-                  <Button variant="ghost" size="icon" title="Personality">
-                    <User className="h-4 w-4" />
+                  <Button variant="ghost" size="sm">
+                    <User className="h-4 w-4 mr-1" />
+                    Personality
                   </Button>
-                  <Button variant="ghost" size="icon" title="Settings">
-                    <Settings className="h-4 w-4" />
+                  <Button variant="ghost" size="sm">
+                    <Settings className="h-4 w-4 mr-1" />
+                    Settings
                   </Button>
                 </div>
 
