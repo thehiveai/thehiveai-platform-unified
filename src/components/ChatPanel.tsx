@@ -258,14 +258,18 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                   <Settings className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-48" align="start" side="right" sideOffset={8}>
-                <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Preferences</DropdownMenuItem>
-                <DropdownMenuItem>Theme</DropdownMenuItem>
-                <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
-                <DropdownMenuItem>About</DropdownMenuItem>
-              </DropdownMenuContent>
+               <DropdownMenuContent className="w-48" align="start" side="right" sideOffset={8}>
+                 <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem>Preferences</DropdownMenuItem>
+                 <DropdownMenuItem>Theme</DropdownMenuItem>
+                 <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
+                 <DropdownMenuItem>Notifications</DropdownMenuItem>
+                 <DropdownMenuItem>Privacy & Security</DropdownMenuItem>
+                 <DropdownMenuItem>System Settings</DropdownMenuItem>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem>About</DropdownMenuItem>
+               </DropdownMenuContent>
             </DropdownMenu>
             
             <div className="flex-1 flex items-center justify-center">
@@ -357,14 +361,18 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                         <Settings className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-48" align="start" side="bottom" sideOffset={8}>
-                      <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>Preferences</DropdownMenuItem>
-                      <DropdownMenuItem>Theme</DropdownMenuItem>
-                      <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
-                      <DropdownMenuItem>About</DropdownMenuItem>
-                    </DropdownMenuContent>
+                     <DropdownMenuContent className="w-48" align="start" side="bottom" sideOffset={8}>
+                       <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                       <DropdownMenuSeparator />
+                       <DropdownMenuItem>Preferences</DropdownMenuItem>
+                       <DropdownMenuItem>Theme</DropdownMenuItem>
+                       <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
+                       <DropdownMenuItem>Notifications</DropdownMenuItem>
+                       <DropdownMenuItem>Privacy & Security</DropdownMenuItem>
+                       <DropdownMenuItem>System Settings</DropdownMenuItem>
+                       <DropdownMenuSeparator />
+                       <DropdownMenuItem>About</DropdownMenuItem>
+                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </div>

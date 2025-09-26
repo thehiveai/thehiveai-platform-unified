@@ -1,4 +1,4 @@
-import { Home, Search, Settings, Grid3X3, Users } from 'lucide-react';
+import { Home, Search, Grid3X3, Users } from 'lucide-react';
 
 const DesktopFooter = () => {
   const taskbarItems = [
@@ -6,7 +6,6 @@ const DesktopFooter = () => {
     { icon: Search, label: 'Search' },
     { icon: Grid3X3, label: 'Apps' },
     { icon: Users, label: 'Users' },
-    { icon: Settings, label: 'Settings' },
   ];
 
   return (
