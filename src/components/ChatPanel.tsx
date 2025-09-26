@@ -220,17 +220,12 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           </div>
 
           {/* Bottom Toolbar */}
-          <div className="px-4 pb-4 space-y-2">
-            {/* New Chat Button */}
-            <div className="flex justify-center">
+          <div className="px-4 pb-4">
+            <div className="flex items-center justify-center gap-2">
               <Button variant="default" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="New Chat" className="bg-primary">
                 <Plus className="h-4 w-4" />
                 {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">New Chat</span>}
               </Button>
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="flex items-center justify-center gap-2">
               <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Attach Files">
                 <Paperclip className="h-4 w-4" />
                 {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Attach</span>}
