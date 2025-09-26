@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2, History, Brain, User, Settings, Paperclip, Type, Mic, MessageCircle, Plus } from 'lucide-react';
+import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2, History, Brain, User, Settings, Paperclip, Type, Mic, MessageCircle, Plus, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import HistorySidebar from './HistorySidebar';
 
 interface Message {
@@ -23,6 +24,36 @@ interface ChatPanelProps {
 const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isModelToolbarOpen, setIsModelToolbarOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  
+  // Mock data for model providers and models
+  const modelProviders = [
+    { id: 'openai', name: 'OpenAI' },
+    { id: 'anthropic', name: 'Anthropic' },
+    { id: 'google', name: 'Google' },
+    { id: 'meta', name: 'Meta' }
+  ];
+
+  const modelsByProvider = {
+    openai: [
+      { id: 'gpt-4', name: 'GPT-4' },
+      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' }
+    ],
+    anthropic: [
+      { id: 'claude-3-opus', name: 'Claude 3 Opus' },
+      { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet' }
+    ],
+    google: [
+      { id: 'gemini-pro', name: 'Gemini Pro' },
+      { id: 'palm-2', name: 'PaLM 2' }
+    ],
+    meta: [
+      { id: 'llama-2-70b', name: 'Llama 2 70B' },
+      { id: 'llama-2-13b', name: 'Llama 2 13B' }
+    ]
+  };
   
   // Mock data for recent chats dropdown
   const recentChats = [
@@ -152,9 +183,19 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                   <History className="h-4 w-4" />
                   {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">History</span>}
                 </Button>
-                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="AI Model Selector">
+                <Button 
+                  variant="ghost" 
+                  size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} 
+                  title="AI Model Selector"
+                  onClick={() => {
+                    if (mode === 'expanded' || mode === 'fullscreen') {
+                      setIsModelToolbarOpen(!isModelToolbarOpen);
+                    }
+                  }}
+                >
                   <Brain className="h-4 w-4" />
                   {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Model</span>}
+                  {(mode === 'expanded' || mode === 'fullscreen') && <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />}
                 </Button>
                 <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Personality">
                   <User className="h-4 w-4" />
@@ -164,7 +205,48 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                   <Settings className="h-4 w-4" />
                   {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Settings</span>}
                 </Button>
+          </div>
+
+           {/* Model Selection Toolbar - Expanded Mode */}
+          {(mode === 'expanded' || mode === 'fullscreen') && isModelToolbarOpen && (
+            <div className="border-b border-border bg-background/50 backdrop-blur-sm transition-all duration-300">
+              <div className="p-4 flex items-center gap-4">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Brain className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Model Provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {modelProviders.map((provider) => (
+                        <SelectItem key={provider.id} value={provider.id}>
+                          {provider.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Select 
+                    value={selectedModel} 
+                    onValueChange={setSelectedModel}
+                    disabled={!selectedProvider}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="AI Model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedProvider && modelsByProvider[selectedProvider as keyof typeof modelsByProvider]?.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+            </div>
+          )}
               {mode === 'fullscreen' && (
                 <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
                   Fullscreen
@@ -272,6 +354,56 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
               </div>
             </PopoverContent>
           </Popover>
+          
+          {/* Model Selection - Condensed Mode */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="mb-2" title="AI Model Selector">
+                <Brain className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" align="start">
+              <div className="space-y-1">
+                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                  Model Provider
+                </div>
+                {modelProviders.map((provider) => (
+                  <Popover key={provider.id}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between text-left h-auto p-2"
+                      >
+                        <span className="text-sm">{provider.name}</span>
+                        <ChevronRight className="h-3 w-3" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-2" side="right" align="start">
+                      <div className="space-y-1">
+                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                          {provider.name} Models
+                        </div>
+                        {modelsByProvider[provider.id as keyof typeof modelsByProvider]?.map((model) => (
+                          <Button
+                            key={model.id}
+                            variant="ghost"
+                            className="w-full justify-start text-left h-auto p-2"
+                            onClick={() => {
+                              setSelectedProvider(provider.id);
+                              setSelectedModel(model.id);
+                            }}
+                          >
+                            <span className="text-sm">{model.name}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          
           <MessageSquare className="h-6 w-6 text-primary" />
         </div>
         )}
