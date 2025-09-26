@@ -37,7 +37,7 @@ const DesktopHeader = () => {
       </div>
       
       <div className="flex items-center gap-4 text-sm text-foreground">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Tooltip>
             <TooltipTrigger asChild>
               <button className="hover:text-primary transition-colors">
