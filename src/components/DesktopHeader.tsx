@@ -32,7 +32,7 @@ const DesktopHeader = () => {
   return (
     <header className="h-12 bg-background/80 backdrop-blur-sm border-b border-border px-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <img src={hiveAILogo} alt="Hive AI" className="h-8 w-auto" />
+        <img src={hiveAILogo} alt="Hive AI" className="h-12 w-auto" />
       </div>
       
       <div className="flex items-center gap-4 text-sm text-foreground">
