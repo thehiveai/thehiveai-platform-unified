@@ -20,7 +20,7 @@ const DesktopOS = () => {
       }}
     >
       <DesktopHeader />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-h-0">
         <ChatPanel 
           isExpanded={isChatExpanded} 
           onToggle={() => setIsChatExpanded(!isChatExpanded)} 
