@@ -67,11 +67,11 @@ const DesktopFooter = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Search Applications</DialogTitle>
+              <DialogTitle>Search</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <Input
-                placeholder="Search for applications..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full"
