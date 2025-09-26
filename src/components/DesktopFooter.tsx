@@ -45,7 +45,7 @@ const DesktopFooter = () => {
 
   return (
     <footer className="h-16 bg-background/80 backdrop-blur-sm border-t border-border px-4 flex items-center justify-center">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         {/* Home Button */}
         <button
           onClick={() => navigate('/')}
