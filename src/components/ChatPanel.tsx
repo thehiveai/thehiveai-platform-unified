@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2, History, Brain, User, Settings, Paperclip, Type, Mic, MessageCircle, Plus, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,14 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
   const [isModelToolbarOpen, setIsModelToolbarOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
+
+  // Reset state when switching to collapsed mode
+  useEffect(() => {
+    if (mode === 'collapsed') {
+      setIsHistoryOpen(false);
+      setIsModelToolbarOpen(false);
+    }
+  }, [mode]);
   
   // Mock data for model providers and models
   const modelProviders = [
@@ -142,8 +150,8 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
 
   return (
     <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm ${mode !== 'fullscreen' ? 'border-r border-border' : ''} flex transition-all duration-300 relative overflow-hidden`}>
-      {/* History Sidebar - Only in expanded/fullscreen mode */}
-      {(mode === 'expanded' || mode === 'fullscreen') && isHistoryOpen && (
+      {/* History Sidebar - Only in expanded/fullscreen mode when history is open */}
+      {mode !== 'collapsed' && isHistoryOpen && (
         <div className="w-64 h-full bg-background border-r border-border flex flex-col flex-shrink-0">
           <HistorySidebar 
             isOpen={true}
@@ -154,269 +162,270 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
 
       {/* Main Chat Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Toggle Buttons */}
-      <div className="absolute top-4 -right-3 z-50 flex flex-col gap-1">
-        <Button
-          onClick={() => onModeChange(getNextMode())}
-          variant="ghost"
-          size="icon"
-          className="bg-background border border-border rounded-full shadow-md hover:bg-secondary"
-          title={`Switch to ${getNextMode()} mode`}
-        >
-          {mode === 'collapsed' ? <ChevronRight className="h-4 w-4" /> : 
-           mode === 'expanded' ? <Maximize2 className="h-4 w-4" /> : 
-           <Minimize2 className="h-4 w-4" />}
-        </Button>
-      </div>
+        {/* Toggle Buttons */}
+        <div className="absolute top-4 -right-3 z-50 flex flex-col gap-1">
+          <Button
+            onClick={() => onModeChange(getNextMode())}
+            variant="ghost"
+            size="icon"
+            className="bg-background border border-border rounded-full shadow-md hover:bg-secondary"
+            title={`Switch to ${getNextMode()} mode`}
+          >
+            {mode === 'collapsed' ? <ChevronRight className="h-4 w-4" /> : 
+             mode === 'expanded' ? <Maximize2 className="h-4 w-4" /> : 
+             <Minimize2 className="h-4 w-4" />}
+          </Button>
+        </div>
 
-      {mode !== 'collapsed' ? (
-        <>
-          {/* Header */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  title="Chat History"
-                  onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                >
+        {mode === 'collapsed' ? (
+          /* Collapsed Mode - Only icon dropdowns */
+          <div className="flex flex-col items-center pt-4 gap-2 h-full">
+            {/* Chat History Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" title="Chat History">
                   <History className="h-4 w-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  title="AI Model Selector"
-                  onClick={() => setIsModelToolbarOpen(!isModelToolbarOpen)}
-                >
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64" align="start" side="right" sideOffset={8}>
+                <DropdownMenuLabel>Recent Chats</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {recentChats.slice(0, 10).map((chatTitle, index) => (
+                  <DropdownMenuItem key={index}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <span className="truncate">{chatTitle}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Model Selection Dropdown with Flyouts */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" title="AI Model Selector">
                   <Brain className="h-4 w-4" />
-                  <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />
                 </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="start" side="right" sideOffset={8}>
+                <DropdownMenuLabel>Model Provider</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {modelProviders.map((provider) => (
+                  <DropdownMenuSub key={provider.id}>
+                    <DropdownMenuSubTrigger>
+                      <span>{provider.name}</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuLabel>{provider.name} Models</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {modelsByProvider[provider.id as keyof typeof modelsByProvider]?.map((model) => (
+                        <DropdownMenuItem
+                          key={model.id}
+                          onClick={() => {
+                            setSelectedProvider(provider.id);
+                            setSelectedModel(model.id);
+                          }}
+                        >
+                          {model.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Personality Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" title="Personality">
                   <User className="h-4 w-4" />
                 </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48" align="start" side="right" sideOffset={8}>
+                <DropdownMenuLabel>AI Personality</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Professional</DropdownMenuItem>
+                <DropdownMenuItem>Creative</DropdownMenuItem>
+                <DropdownMenuItem>Casual</DropdownMenuItem>
+                <DropdownMenuItem>Technical</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Settings Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" title="Settings">
                   <Settings className="h-4 w-4" />
                 </Button>
-              </div>
-
-              {mode === 'fullscreen' && (
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-                  Fullscreen
-                </span>
-              )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48" align="start" side="right" sideOffset={8}>
+                <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Preferences</DropdownMenuItem>
+                <DropdownMenuItem>Theme</DropdownMenuItem>
+                <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
+                <DropdownMenuItem>About</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <div className="flex-1 flex items-center justify-center">
+              <MessageSquare className="h-6 w-6 text-primary" />
             </div>
           </div>
-
-          {/* Model Selection Toolbar */}
-          {isModelToolbarOpen && (
-            <div className="border-b border-border bg-background/50 backdrop-blur-sm transition-all duration-300">
-              <div className="p-4 flex items-center gap-4">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Brain className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Model Provider" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border shadow-lg">
-                      {modelProviders.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          {provider.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 min-w-0">
-                  <Select 
-                    value={selectedModel} 
-                    onValueChange={setSelectedModel}
-                    disabled={!selectedProvider}
+        ) : (
+          /* Expanded/Fullscreen Mode - Full UI */
+          <>
+            {/* Header */}
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    title="Chat History"
+                    onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                   >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="AI Model" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border shadow-lg">
-                      {selectedProvider && modelsByProvider[selectedProvider as keyof typeof modelsByProvider]?.map((model) => (
-                        <SelectItem key={model.id} value={model.id}>
-                          {model.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <History className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    title="AI Model Selector"
+                    onClick={() => setIsModelToolbarOpen(!isModelToolbarOpen)}
+                  >
+                    <Brain className="h-4 w-4" />
+                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Personality">
+                    <User className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Settings">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {mode === 'fullscreen' && (
+                  <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
+                    Fullscreen
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Model Selection Toolbar */}
+            {isModelToolbarOpen && (
+              <div className="border-b border-border bg-background/50 backdrop-blur-sm transition-all duration-300">
+                <div className="p-4 flex items-center gap-4">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Brain className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Model Provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modelProviders.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Select 
+                      value={selectedModel} 
+                      onValueChange={setSelectedModel}
+                      disabled={!selectedProvider}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="AI Model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedProvider && modelsByProvider[selectedProvider as keyof typeof modelsByProvider]?.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Messages */}
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full p-4">
-              <div className="space-y-4">
-                {messages.map((msg) => (
-                  <div key={msg.id} className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className={msg.role === 'user' ? 'text-primary' : 'text-foreground'}>
-                        {msg.role === 'user' ? 'You' : 'Hive AI'}
-                      </span>
-                      <Clock className="h-3 w-3" />
-                      <span>{formatDate(msg.timestamp)}</span>
+            {/* Messages */}
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full p-4">
+                <div className="space-y-4">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className={msg.role === 'user' ? 'text-primary' : 'text-foreground'}>
+                          {msg.role === 'user' ? 'You' : 'Hive AI'}
+                        </span>
+                        <Clock className="h-3 w-3" />
+                        <span>{formatDate(msg.timestamp)}</span>
+                      </div>
+                      <div className={`p-3 rounded-lg text-sm ${
+                        msg.role === 'user' 
+                          ? 'bg-primary/10 text-foreground ml-4' 
+                          : 'bg-secondary text-foreground mr-4'
+                      }`}>
+                        {msg.content}
+                      </div>
                     </div>
-                    <div className={`p-3 rounded-lg text-sm ${
-                      msg.role === 'user' 
-                        ? 'bg-primary/10 text-foreground ml-4' 
-                        : 'bg-secondary text-foreground mr-4'
-                    }`}>
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Input */}
+            <div className="p-4 border-t border-border">
+              <div className="flex gap-2">
+                <Input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Ask Buddy Bee..."
+                  className="flex-1"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <Button 
+                  onClick={handleSendMessage}
+                  size="icon"
+                  disabled={!message.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-            </ScrollArea>
-          </div>
-
-          {/* Input */}
-          <div className="p-4 border-t border-border">
-            <div className="flex gap-2">
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask Buddy Bee..."
-                className="flex-1"
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              />
-              <Button 
-                onClick={handleSendMessage}
-                size="icon"
-                disabled={!message.trim()}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
             </div>
-          </div>
 
-          {/* Bottom Toolbar */}
-          <div className="px-4 pb-4">
-            <div className="flex items-center justify-center gap-2">
-              <Button variant="default" size="sm" title="New Chat" className="bg-primary">
-                <Plus className="h-4 w-4" />
-                <span className="ml-1">New Chat</span>
-              </Button>
-              <Button variant="ghost" size="sm" title="Attach Files">
-                <Paperclip className="h-4 w-4" />
-                <span className="ml-1">Attach</span>
-              </Button>
-              <Button variant="ghost" size="sm" title="Text Input">
-                <Type className="h-4 w-4" />
-                <span className="ml-1">Text</span>
-              </Button>
-              <Button variant="ghost" size="sm" title="Voice Input">
-                <Mic className="h-4 w-4" />
-                <span className="ml-1">Voice</span>
-              </Button>
-              <Button variant="ghost" size="sm" title="Conversational Mode">
-                <MessageCircle className="h-4 w-4" />
-                <span className="ml-1">Chat</span>
-              </Button>
+            {/* Bottom Toolbar */}
+            <div className="px-4 pb-4">
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="default" size="sm" title="New Chat" className="bg-primary">
+                  <Plus className="h-4 w-4" />
+                  <span className="ml-1">New Chat</span>
+                </Button>
+                <Button variant="ghost" size="sm" title="Attach Files">
+                  <Paperclip className="h-4 w-4" />
+                  <span className="ml-1">Attach</span>
+                </Button>
+                <Button variant="ghost" size="sm" title="Text Input">
+                  <Type className="h-4 w-4" />
+                  <span className="ml-1">Text</span>
+                </Button>
+                <Button variant="ghost" size="sm" title="Voice Input">
+                  <Mic className="h-4 w-4" />
+                  <span className="ml-1">Voice</span>
+                </Button>
+                <Button variant="ghost" size="sm" title="Conversational Mode">
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="ml-1">Chat</span>
+                </Button>
+              </div>
             </div>
-          </div>
-        </>
-      ) : (
-        /* Collapsed Mode - Only icons with dropdown menus */
-        <div className="flex flex-col items-center pt-4 gap-2">
-          {/* Chat History Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" title="Chat History">
-                <History className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64 bg-background border border-border shadow-lg z-50" align="start" side="right">
-              <DropdownMenuLabel>Recent Chats</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {recentChats.slice(0, 10).map((chatTitle, index) => (
-                <DropdownMenuItem key={index} onClick={() => {/* Handle chat selection */}}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  <span className="truncate">{chatTitle}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {/* Model Selection Dropdown with Flyouts */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" title="AI Model Selector">
-                <Brain className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-background border border-border shadow-lg z-50" align="start" side="right">
-              <DropdownMenuLabel>Model Provider</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {modelProviders.map((provider) => (
-                <DropdownMenuSub key={provider.id}>
-                  <DropdownMenuSubTrigger>
-                    <span>{provider.name}</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="bg-background border border-border shadow-lg z-50">
-                    <DropdownMenuLabel>{provider.name} Models</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {modelsByProvider[provider.id as keyof typeof modelsByProvider]?.map((model) => (
-                      <DropdownMenuItem
-                        key={model.id}
-                        onClick={() => {
-                          setSelectedProvider(provider.id);
-                          setSelectedModel(model.id);
-                        }}
-                      >
-                        {model.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Personality Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" title="Personality">
-                <User className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-background border border-border shadow-lg z-50" align="start" side="right">
-              <DropdownMenuLabel>AI Personality</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Professional</DropdownMenuItem>
-              <DropdownMenuItem>Creative</DropdownMenuItem>
-              <DropdownMenuItem>Casual</DropdownMenuItem>
-              <DropdownMenuItem>Technical</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Settings Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" title="Settings">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-background border border-border shadow-lg z-50" align="start" side="right">
-              <DropdownMenuLabel>Settings</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Preferences</DropdownMenuItem>
-              <DropdownMenuItem>Theme</DropdownMenuItem>
-              <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
-              <DropdownMenuItem>About</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <div className="flex-1 flex items-center justify-center">
-            <MessageSquare className="h-6 w-6 text-primary" />
-          </div>
-        </div>
-      )}
+          </>
+        )}
       </div>
     </div>
   );
