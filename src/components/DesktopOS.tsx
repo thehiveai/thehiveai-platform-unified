@@ -10,7 +10,7 @@ const DesktopOS = () => {
 
   return (
     <div 
-      className="min-h-screen w-full flex flex-col"
+      className="h-screen w-full flex flex-col"
       style={{ 
         backgroundImage: `url(${honeycombWallpaper})`,
         backgroundSize: 'cover',
@@ -20,7 +20,7 @@ const DesktopOS = () => {
       }}
     >
       <DesktopHeader />
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex">
         <ChatPanel 
           isExpanded={isChatExpanded} 
           onToggle={() => setIsChatExpanded(!isChatExpanded)} 
