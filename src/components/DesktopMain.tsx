@@ -13,7 +13,7 @@ const DesktopMain = () => {
             <img 
               src={buddyBee} 
               alt="Buddy Bee" 
-              className="h-24 w-24 buddy-bee-wings"
+              className="h-24 w-auto buddy-bee-wings object-contain"
             />
           </div>
         </div>
