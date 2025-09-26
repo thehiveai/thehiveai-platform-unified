@@ -284,7 +284,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                     size="sm"
                     onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                   >
-                    <History className="h-4 w-4 mr-1" />
+                    <History className="h-4 w-4 mr-2" />
                     History
                   </Button>
                   <Button 
@@ -292,16 +292,16 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                     size="sm"
                     onClick={() => setIsModelToolbarOpen(!isModelToolbarOpen)}
                   >
-                    <Brain className="h-4 w-4 mr-1" />
+                    <Brain className="h-4 w-4 mr-2" />
                     Model
                     <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />
                   </Button>
                   <Button variant="ghost" size="sm">
-                    <User className="h-4 w-4 mr-1" />
+                    <User className="h-4 w-4 mr-2" />
                     Personality
                   </Button>
                   <Button variant="ghost" size="sm">
-                    <Settings className="h-4 w-4 mr-1" />
+                    <Settings className="h-4 w-4 mr-2" />
                     Settings
                   </Button>
                 </div>
