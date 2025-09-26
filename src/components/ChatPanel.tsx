@@ -250,27 +250,6 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <DropdownMenuItem>Technical</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Settings Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" title="Settings">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-               <DropdownMenuContent className="w-48" align="start" side="right" sideOffset={8}>
-                 <DropdownMenuLabel>Settings</DropdownMenuLabel>
-                 <DropdownMenuSeparator />
-                 <DropdownMenuItem>Preferences</DropdownMenuItem>
-                 <DropdownMenuItem>Theme</DropdownMenuItem>
-                 <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
-                 <DropdownMenuItem>Notifications</DropdownMenuItem>
-                 <DropdownMenuItem>Privacy & Security</DropdownMenuItem>
-                 <DropdownMenuItem>System Settings</DropdownMenuItem>
-                 <DropdownMenuSeparator />
-                 <DropdownMenuItem>About</DropdownMenuItem>
-               </DropdownMenuContent>
-            </DropdownMenu>
             
             <div className="flex-1 flex items-center justify-center">
               <MessageSquare className="h-6 w-6 text-primary" />
@@ -337,43 +316,22 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  {/* Personality Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" title="Personality">
-                        <User className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-48" align="start" side="bottom" sideOffset={8}>
-                      <DropdownMenuLabel>AI Personality</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>Professional</DropdownMenuItem>
-                      <DropdownMenuItem>Creative</DropdownMenuItem>
-                      <DropdownMenuItem>Casual</DropdownMenuItem>
-                      <DropdownMenuItem>Technical</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Settings Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" title="Settings">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
+                   {/* Personality Dropdown */}
+                   <DropdownMenu>
+                     <DropdownMenuTrigger asChild>
+                       <Button variant="ghost" size="icon" title="Personality">
+                         <User className="h-4 w-4" />
+                       </Button>
+                     </DropdownMenuTrigger>
                      <DropdownMenuContent className="w-48" align="start" side="bottom" sideOffset={8}>
-                       <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                       <DropdownMenuLabel>AI Personality</DropdownMenuLabel>
                        <DropdownMenuSeparator />
-                       <DropdownMenuItem>Preferences</DropdownMenuItem>
-                       <DropdownMenuItem>Theme</DropdownMenuItem>
-                       <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
-                       <DropdownMenuItem>Notifications</DropdownMenuItem>
-                       <DropdownMenuItem>Privacy & Security</DropdownMenuItem>
-                       <DropdownMenuItem>System Settings</DropdownMenuItem>
-                       <DropdownMenuSeparator />
-                       <DropdownMenuItem>About</DropdownMenuItem>
+                       <DropdownMenuItem>Professional</DropdownMenuItem>
+                       <DropdownMenuItem>Creative</DropdownMenuItem>
+                       <DropdownMenuItem>Casual</DropdownMenuItem>
+                       <DropdownMenuItem>Technical</DropdownMenuItem>
                      </DropdownMenuContent>
-                  </DropdownMenu>
+                   </DropdownMenu>
                 </div>
               </div>
             </div>
