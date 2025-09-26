@@ -113,17 +113,21 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" title="Chat History">
+                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Chat History">
                   <History className="h-4 w-4" />
+                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">History</span>}
                 </Button>
-                <Button variant="ghost" size="icon" title="AI Model Selector">
+                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="AI Model Selector">
                   <Brain className="h-4 w-4" />
+                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Model</span>}
                 </Button>
-                <Button variant="ghost" size="icon" title="Personality">
+                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Personality">
                   <User className="h-4 w-4" />
+                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Personality</span>}
                 </Button>
-                <Button variant="ghost" size="icon" title="Settings">
+                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Settings">
                   <Settings className="h-4 w-4" />
+                  {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Settings</span>}
                 </Button>
               </div>
               {mode === 'fullscreen' && (
@@ -183,17 +187,21 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           {/* Bottom Toolbar */}
           <div className="px-4 pb-4">
             <div className="flex items-center justify-center gap-2">
-              <Button variant="ghost" size="icon" title="Attach Files">
+              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Attach Files">
                 <Paperclip className="h-4 w-4" />
+                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Attach</span>}
               </Button>
-              <Button variant="ghost" size="icon" title="Text Input">
+              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Text Input">
                 <Type className="h-4 w-4" />
+                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Text</span>}
               </Button>
-              <Button variant="ghost" size="icon" title="Voice Input">
+              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Voice Input">
                 <Mic className="h-4 w-4" />
+                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Voice</span>}
               </Button>
-              <Button variant="ghost" size="icon" title="Conversational Mode">
+              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Conversational Mode">
                 <MessageCircle className="h-4 w-4" />
+                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Chat</span>}
               </Button>
             </div>
           </div>
