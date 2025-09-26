@@ -9,7 +9,7 @@ const DesktopMain = () => {
             <h2 className="text-4xl font-bold mb-4 text-primary">Welcome to the Hive AI Platform</h2>
             <p className="text-xl text-muted-foreground">Intelligence for Work & Play</p>
           </div>
-          <div className="absolute top-1 right-0 transform translate-x-16 -translate-y-2">
+          <div className="absolute top-0 left-1/2 transform translate-x-20 -translate-y-8">
             <img 
               src={buddyBee} 
               alt="Buddy Bee" 
