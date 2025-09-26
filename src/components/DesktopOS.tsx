@@ -5,7 +5,7 @@ import DesktopFooter from './DesktopFooter';
 import DesktopMain from './DesktopMain';
 import ChatPanel from './ChatPanel';
 
-type ChatMode = 'collapsed' | 'standard' | 'expanded' | 'fullscreen';
+type ChatMode = 'collapsed' | 'standard' | 'expanded';
 
 const DesktopOS = () => {
   const [chatMode, setChatMode] = useState<ChatMode>('expanded');
@@ -27,7 +27,7 @@ const DesktopOS = () => {
           mode={chatMode}
           onModeChange={setChatMode}
         />
-        {chatMode !== 'fullscreen' && <DesktopMain />}
+        <DesktopMain />
       </div>
       <DesktopFooter />
     </div>

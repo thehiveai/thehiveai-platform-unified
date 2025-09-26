@@ -15,7 +15,7 @@ interface Message {
   timestamp: Date;
 }
 
-type ChatMode = 'collapsed' | 'standard' | 'expanded' | 'fullscreen';
+type ChatMode = 'collapsed' | 'standard' | 'expanded';
 
 interface ChatPanelProps {
   mode: ChatMode;
@@ -136,24 +136,22 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
     switch (mode) {
       case 'collapsed': return 'standard';
       case 'standard': return 'expanded';
-      case 'expanded': return 'fullscreen';
-      case 'fullscreen': return 'collapsed';
+      case 'expanded': return 'collapsed';
     }
   };
 
   const getWidthClass = () => {
     switch (mode) {
       case 'collapsed': return 'w-12';
-      case 'standard': return 'w-64';
+      case 'standard': return 'w-72'; // Made wider as requested
       case 'expanded': return 'w-80';
-      case 'fullscreen': return 'w-full';
     }
   };
 
   return (
-    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm ${mode !== 'fullscreen' ? 'border-r border-border' : ''} flex transition-all duration-300 relative overflow-hidden`}>
-      {/* History Sidebar - Only in expanded/fullscreen mode when history is open */}
-      {(mode === 'expanded' || mode === 'fullscreen') && isHistoryOpen && (
+    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm border-r border-border flex transition-all duration-300 relative overflow-hidden`}>
+      {/* History Sidebar - Only in expanded mode when history is open */}
+      {mode === 'expanded' && isHistoryOpen && (
         <div className="w-64 h-full bg-background border-r border-border flex flex-col flex-shrink-0">
           <HistorySidebar 
             isOpen={true}
@@ -174,14 +172,14 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
             title={`Switch to ${getNextMode()} mode`}
           >
             {mode === 'collapsed' ? <ChevronRight className="h-4 w-4" /> : 
-             mode === 'expanded' ? <Maximize2 className="h-4 w-4" /> : 
-             <Minimize2 className="h-4 w-4" />}
+             mode === 'standard' ? <ChevronRight className="h-4 w-4" /> : 
+             <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
 
         {mode === 'collapsed' ? (
           /* Collapsed Mode - Only icon dropdowns */
-          <div className="flex flex-col items-center pt-4 gap-2 h-full">
+          <div className="flex flex-col items-center pt-8 gap-3 h-full">
             {/* Chat History Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -416,7 +414,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
             </div>
           </>
         ) : (
-          /* Expanded/Fullscreen Mode - Full UI */
+          /* Expanded Mode - Full UI */
           <>
             {/* Header */}
             <div className="p-4 border-b border-border">
@@ -448,12 +446,6 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                     Settings
                   </Button>
                 </div>
-
-                {mode === 'fullscreen' && (
-                  <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-                    Fullscreen
-                  </span>
-                )}
               </div>
             </div>
 
