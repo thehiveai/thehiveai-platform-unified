@@ -187,14 +187,10 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                   variant="ghost" 
                   size="icon"
                   title="AI Model Selector"
-                  onClick={() => {
-                    if (mode === 'expanded' || mode === 'fullscreen') {
-                      setIsModelToolbarOpen(!isModelToolbarOpen);
-                    }
-                  }}
+                  onClick={() => setIsModelToolbarOpen(!isModelToolbarOpen)}
                 >
                   <Brain className="h-4 w-4" />
-                  {(mode === 'expanded' || mode === 'fullscreen') && <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />}
+                  <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${isModelToolbarOpen ? 'rotate-180' : ''}`} />
                 </Button>
                 <Button variant="ghost" size="icon" title="Personality">
                   <User className="h-4 w-4" />
@@ -202,7 +198,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <Button variant="ghost" size="icon" title="Settings">
                   <Settings className="h-4 w-4" />
                 </Button>
-          </div>
+              </div>
 
               {mode === 'fullscreen' && (
                 <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
@@ -212,8 +208,8 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
             </div>
           </div>
 
-          {/* Model Selection Toolbar - Only in expanded/fullscreen mode */}
-          {(mode === 'expanded' || mode === 'fullscreen') && isModelToolbarOpen && (
+          {/* Model Selection Toolbar */}
+          {isModelToolbarOpen && (
             <div className="border-b border-border bg-background/50 backdrop-blur-sm transition-all duration-300">
               <div className="p-4 flex items-center gap-4">
                 <div className="flex items-center gap-2 min-w-0">
@@ -222,7 +218,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Model Provider" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border shadow-lg">
                       {modelProviders.map((provider) => (
                         <SelectItem key={provider.id} value={provider.id}>
                           {provider.name}
@@ -240,7 +236,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="AI Model" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border shadow-lg">
                       {selectedProvider && modelsByProvider[selectedProvider as keyof typeof modelsByProvider]?.map((model) => (
                         <SelectItem key={model.id} value={model.id}>
                           {model.name}
@@ -302,31 +298,32 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           {/* Bottom Toolbar */}
           <div className="px-4 pb-4">
             <div className="flex items-center justify-center gap-2">
-              <Button variant="default" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="New Chat" className="bg-primary">
+              <Button variant="default" size="sm" title="New Chat" className="bg-primary">
                 <Plus className="h-4 w-4" />
-                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">New Chat</span>}
+                <span className="ml-1">New Chat</span>
               </Button>
-              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Attach Files">
+              <Button variant="ghost" size="sm" title="Attach Files">
                 <Paperclip className="h-4 w-4" />
-                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Attach</span>}
+                <span className="ml-1">Attach</span>
               </Button>
-              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Text Input">
+              <Button variant="ghost" size="sm" title="Text Input">
                 <Type className="h-4 w-4" />
-                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Text</span>}
+                <span className="ml-1">Text</span>
               </Button>
-              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Voice Input">
+              <Button variant="ghost" size="sm" title="Voice Input">
                 <Mic className="h-4 w-4" />
-                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Voice</span>}
+                <span className="ml-1">Voice</span>
               </Button>
-              <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Conversational Mode">
+              <Button variant="ghost" size="sm" title="Conversational Mode">
                 <MessageCircle className="h-4 w-4" />
-                {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">Chat</span>}
+                <span className="ml-1">Chat</span>
               </Button>
             </div>
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center pt-4 gap-2 relative">
+        /* Collapsed Mode - Only icons with dropdown menus */
+        <div className="flex flex-col items-center pt-4 gap-2">
           {/* Chat History Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -334,7 +331,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <History className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64" align="start" side="right">
+            <DropdownMenuContent className="w-64 bg-background border border-border shadow-lg z-50" align="start" side="right">
               <DropdownMenuLabel>Recent Chats</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {recentChats.slice(0, 10).map((chatTitle, index) => (
@@ -353,7 +350,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <Brain className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="start" side="right">
+            <DropdownMenuContent className="w-56 bg-background border border-border shadow-lg z-50" align="start" side="right">
               <DropdownMenuLabel>Model Provider</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {modelProviders.map((provider) => (
@@ -361,7 +358,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                   <DropdownMenuSubTrigger>
                     <span>{provider.name}</span>
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
+                  <DropdownMenuSubContent className="bg-background border border-border shadow-lg z-50">
                     <DropdownMenuLabel>{provider.name} Models</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {modelsByProvider[provider.id as keyof typeof modelsByProvider]?.map((model) => (
@@ -388,7 +385,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <User className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48" align="start" side="right">
+            <DropdownMenuContent className="w-48 bg-background border border-border shadow-lg z-50" align="start" side="right">
               <DropdownMenuLabel>AI Personality</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Professional</DropdownMenuItem>
@@ -405,7 +402,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 <Settings className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48" align="start" side="right">
+            <DropdownMenuContent className="w-48 bg-background border border-border shadow-lg z-50" align="start" side="right">
               <DropdownMenuLabel>Settings</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Preferences</DropdownMenuItem>
@@ -419,7 +416,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
             <MessageSquare className="h-6 w-6 text-primary" />
           </div>
         </div>
-        )}
+      )}
       </div>
     </div>
   );
