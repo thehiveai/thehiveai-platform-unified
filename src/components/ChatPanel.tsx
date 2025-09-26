@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, MessageSquare, Clock } from 'lucide-react';
+import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,7 +11,12 @@ interface Message {
   timestamp: Date;
 }
 
-const ChatPanel = () => {
+interface ChatPanelProps {
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const ChatPanel = ({ isExpanded, onToggle }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -53,14 +58,6 @@ const ChatPanel = () => {
     }
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-  };
-
   const formatDate = (date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -76,59 +73,77 @@ const ChatPanel = () => {
   };
 
   return (
-    <div className="w-80 h-full bg-background/95 backdrop-blur-sm border-r border-border flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2 mb-2">
-          <MessageSquare className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Hive OS</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">AI Assistant</p>
-      </div>
+    <div className={`${isExpanded ? 'w-80' : 'w-12'} h-screen bg-background/95 backdrop-blur-sm border-r border-border flex flex-col transition-all duration-300 relative`}>
+      {/* Toggle Button */}
+      <Button
+        onClick={onToggle}
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 -right-3 z-50 bg-background border border-border rounded-full shadow-md hover:bg-secondary"
+      >
+        {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </Button>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className={msg.role === 'user' ? 'text-primary' : 'text-foreground'}>
-                  {msg.role === 'user' ? 'You' : 'Hive AI'}
-                </span>
-                <Clock className="h-3 w-3" />
-                <span>{formatDate(msg.timestamp)}</span>
-              </div>
-              <div className={`p-3 rounded-lg text-sm ${
-                msg.role === 'user' 
-                  ? 'bg-primary/10 text-foreground ml-4' 
-                  : 'bg-secondary text-foreground mr-4'
-              }`}>
-                {msg.content}
-              </div>
+      {isExpanded ? (
+        <>
+          {/* Header */}
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Hive OS</h2>
             </div>
-          ))}
-        </div>
-      </ScrollArea>
+            <p className="text-sm text-muted-foreground">AI Assistant</p>
+          </div>
 
-      {/* Input */}
-      <div className="p-4 border-t border-border">
-        <div className="flex gap-2">
-          <Input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ask Hive AI..."
-            className="flex-1"
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-          />
-          <Button 
-            onClick={handleSendMessage}
-            size="icon"
-            disabled={!message.trim()}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {/* Messages */}
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((msg) => (
+                <div key={msg.id} className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className={msg.role === 'user' ? 'text-primary' : 'text-foreground'}>
+                      {msg.role === 'user' ? 'You' : 'Hive AI'}
+                    </span>
+                    <Clock className="h-3 w-3" />
+                    <span>{formatDate(msg.timestamp)}</span>
+                  </div>
+                  <div className={`p-3 rounded-lg text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-primary/10 text-foreground ml-4' 
+                      : 'bg-secondary text-foreground mr-4'
+                  }`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          {/* Input */}
+          <div className="p-4 border-t border-border">
+            <div className="flex gap-2">
+              <Input
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Ask Hive AI..."
+                className="flex-1"
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              />
+              <Button 
+                onClick={handleSendMessage}
+                size="icon"
+                disabled={!message.trim()}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col items-center pt-4">
+          <MessageSquare className="h-6 w-6 text-primary mb-2" />
         </div>
-      </div>
+      )}
     </div>
   );
 };
