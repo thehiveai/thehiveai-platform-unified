@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import HistorySidebar from './HistorySidebar';
 
 interface Message {
@@ -325,83 +326,98 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center pt-4 relative">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="mb-2" title="Chat History">
+        <div className="flex flex-col items-center pt-4 gap-2 relative">
+          {/* Chat History Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" title="Chat History">
                 <History className="h-4 w-4" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2" align="start">
-              <div className="space-y-1">
-                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                  Recent Chats
-                </div>
-                {recentChats.slice(0, 10).map((chatTitle, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    className="w-full justify-start text-left h-auto p-2"
-                    onClick={() => {/* Handle chat selection */}}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate text-sm">{chatTitle}</span>
-                  </Button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64" align="start" side="right">
+              <DropdownMenuLabel>Recent Chats</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {recentChats.slice(0, 10).map((chatTitle, index) => (
+                <DropdownMenuItem key={index} onClick={() => {/* Handle chat selection */}}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  <span className="truncate">{chatTitle}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           
-          {/* Model Selection - Condensed Mode */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="mb-2" title="AI Model Selector">
+          {/* Model Selection Dropdown with Flyouts */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" title="AI Model Selector">
                 <Brain className="h-4 w-4" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2" align="start">
-              <div className="space-y-1">
-                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                  Model Provider
-                </div>
-                {modelProviders.map((provider) => (
-                  <Popover key={provider.id}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-between text-left h-auto p-2"
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start" side="right">
+              <DropdownMenuLabel>Model Provider</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {modelProviders.map((provider) => (
+                <DropdownMenuSub key={provider.id}>
+                  <DropdownMenuSubTrigger>
+                    <span>{provider.name}</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuLabel>{provider.name} Models</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {modelsByProvider[provider.id as keyof typeof modelsByProvider]?.map((model) => (
+                      <DropdownMenuItem
+                        key={model.id}
+                        onClick={() => {
+                          setSelectedProvider(provider.id);
+                          setSelectedModel(model.id);
+                        }}
                       >
-                        <span className="text-sm">{provider.name}</span>
-                        <ChevronRight className="h-3 w-3" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-2" side="right" align="start">
-                      <div className="space-y-1">
-                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                          {provider.name} Models
-                        </div>
-                        {modelsByProvider[provider.id as keyof typeof modelsByProvider]?.map((model) => (
-                          <Button
-                            key={model.id}
-                            variant="ghost"
-                            className="w-full justify-start text-left h-auto p-2"
-                            onClick={() => {
-                              setSelectedProvider(provider.id);
-                              setSelectedModel(model.id);
-                            }}
-                          >
-                            <span className="text-sm">{model.name}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+                        {model.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Personality Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" title="Personality">
+                <User className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48" align="start" side="right">
+              <DropdownMenuLabel>AI Personality</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Professional</DropdownMenuItem>
+              <DropdownMenuItem>Creative</DropdownMenuItem>
+              <DropdownMenuItem>Casual</DropdownMenuItem>
+              <DropdownMenuItem>Technical</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Settings Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" title="Settings">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48" align="start" side="right">
+              <DropdownMenuLabel>Settings</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Preferences</DropdownMenuItem>
+              <DropdownMenuItem>Theme</DropdownMenuItem>
+              <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
+              <DropdownMenuItem>About</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
-          <MessageSquare className="h-6 w-6 text-primary" />
+          <div className="flex-1 flex items-center justify-center">
+            <MessageSquare className="h-6 w-6 text-primary" />
+          </div>
         </div>
         )}
       </div>
