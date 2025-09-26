@@ -207,7 +207,15 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 </Button>
           </div>
 
-           {/* Model Selection Toolbar - Expanded Mode */}
+              {mode === 'fullscreen' && (
+                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
+                  Fullscreen
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Model Selection Toolbar - Separate toolbar underneath */}
           {(mode === 'expanded' || mode === 'fullscreen') && isModelToolbarOpen && (
             <div className="border-b border-border bg-background/50 backdrop-blur-sm transition-all duration-300">
               <div className="p-4 flex items-center gap-4">
@@ -247,13 +255,6 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
               </div>
             </div>
           )}
-              {mode === 'fullscreen' && (
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
-                  Fullscreen
-                </span>
-              )}
-            </div>
-          </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-hidden">
