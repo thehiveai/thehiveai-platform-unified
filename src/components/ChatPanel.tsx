@@ -3,6 +3,8 @@ import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minim
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import HistorySidebar from './HistorySidebar';
 
 interface Message {
   id: string;
@@ -20,6 +22,22 @@ interface ChatPanelProps {
 
 const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  
+  // Mock data for recent chats dropdown
+  const recentChats = [
+    'Web-based desktop OS',
+    'React component design', 
+    'Tailwind CSS setup',
+    'TypeScript interfaces',
+    'API integration help',
+    'Database schema design',
+    'Authentication flow',
+    'State management',
+    'Performance optimization',
+    'UI component library'
+  ];
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -113,7 +131,12 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} title="Chat History">
+                <Button 
+                  variant="ghost" 
+                  size={mode === 'expanded' || mode === 'fullscreen' ? 'sm' : 'icon'} 
+                  title="Chat History"
+                  onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                >
                   <History className="h-4 w-4" />
                   {(mode === 'expanded' || mode === 'fullscreen') && <span className="ml-1">History</span>}
                 </Button>
@@ -207,9 +230,42 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center pt-4">
-          <MessageSquare className="h-6 w-6 text-primary mb-2" />
+        <div className="flex flex-col items-center pt-4 relative">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="mb-2" title="Chat History">
+                <History className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" align="start">
+              <div className="space-y-1">
+                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                  Recent Chats
+                </div>
+                {recentChats.map((chatTitle, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    className="w-full justify-start text-left h-auto p-2"
+                    onClick={() => {/* Handle chat selection */}}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="truncate text-sm">{chatTitle}</span>
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <MessageSquare className="h-6 w-6 text-primary" />
         </div>
+      )}
+
+      {/* History Sidebar */}
+      {(mode === 'expanded' || mode === 'fullscreen') && (
+        <HistorySidebar 
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+        />
       )}
     </div>
   );
