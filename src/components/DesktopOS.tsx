@@ -6,8 +6,14 @@ import DesktopMain from './DesktopMain';
 const DesktopOS = () => {
   return (
     <div 
-      className="min-h-screen w-full bg-cover bg-center bg-no-repeat flex flex-col"
-      style={{ backgroundImage: `url(${honeycombWallpaper})` }}
+      className="min-h-screen w-full flex flex-col"
+      style={{ 
+        backgroundImage: `url(${honeycombWallpaper})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
+      }}
     >
       <DesktopHeader />
       <DesktopMain />
