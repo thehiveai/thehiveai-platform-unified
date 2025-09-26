@@ -279,28 +279,93 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
             <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                    title="History"
-                  >
-                    <History className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => setIsModelToolbarOpen(!isModelToolbarOpen)}
-                    title="Model"
-                  >
-                    <Brain className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" title="Personality">
-                    <User className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" title="Settings">
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  {/* Chat History Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Chat History">
+                        <History className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-64" align="start" side="bottom" sideOffset={8}>
+                      <DropdownMenuLabel>Recent Chats</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {recentChats.slice(0, 10).map((chatTitle, index) => (
+                        <DropdownMenuItem key={index}>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          <span className="truncate">{chatTitle}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  {/* Model Selection Dropdown with Flyouts */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" title="AI Model Selector">
+                        <Brain className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="start" side="bottom" sideOffset={8}>
+                      <DropdownMenuLabel>Model Provider</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {modelProviders.map((provider) => (
+                        <DropdownMenuSub key={provider.id}>
+                          <DropdownMenuSubTrigger>
+                            <span>{provider.name}</span>
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent>
+                            <DropdownMenuLabel>{provider.name} Models</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {modelsByProvider[provider.id as keyof typeof modelsByProvider]?.map((model) => (
+                              <DropdownMenuItem
+                                key={model.id}
+                                onClick={() => {
+                                  setSelectedProvider(provider.id);
+                                  setSelectedModel(model.id);
+                                }}
+                              >
+                                {model.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Personality Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Personality">
+                        <User className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48" align="start" side="bottom" sideOffset={8}>
+                      <DropdownMenuLabel>AI Personality</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>Professional</DropdownMenuItem>
+                      <DropdownMenuItem>Creative</DropdownMenuItem>
+                      <DropdownMenuItem>Casual</DropdownMenuItem>
+                      <DropdownMenuItem>Technical</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Settings Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Settings">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48" align="start" side="bottom" sideOffset={8}>
+                      <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>Preferences</DropdownMenuItem>
+                      <DropdownMenuItem>Theme</DropdownMenuItem>
+                      <DropdownMenuItem>Keyboard Shortcuts</DropdownMenuItem>
+                      <DropdownMenuItem>About</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
