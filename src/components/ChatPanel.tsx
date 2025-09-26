@@ -91,7 +91,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
   };
 
   return (
-    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm border-r border-border flex flex-col transition-all duration-300 relative`}>
+    <div className={`${getWidthClass()} h-full bg-background/95 backdrop-blur-sm ${mode !== 'fullscreen' ? 'border-r border-border' : ''} flex flex-col transition-all duration-300 relative overflow-hidden`}>
       {/* Toggle Buttons */}
       <div className="absolute top-4 -right-3 z-50 flex flex-col gap-1">
         <Button
@@ -124,28 +124,30 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {messages.map((msg) => (
-                <div key={msg.id} className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className={msg.role === 'user' ? 'text-primary' : 'text-foreground'}>
-                      {msg.role === 'user' ? 'You' : 'Hive AI'}
-                    </span>
-                    <Clock className="h-3 w-3" />
-                    <span>{formatDate(msg.timestamp)}</span>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full p-4">
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <div key={msg.id} className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className={msg.role === 'user' ? 'text-primary' : 'text-foreground'}>
+                        {msg.role === 'user' ? 'You' : 'Hive AI'}
+                      </span>
+                      <Clock className="h-3 w-3" />
+                      <span>{formatDate(msg.timestamp)}</span>
+                    </div>
+                    <div className={`p-3 rounded-lg text-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-primary/10 text-foreground ml-4' 
+                        : 'bg-secondary text-foreground mr-4'
+                    }`}>
+                      {msg.content}
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-lg text-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-primary/10 text-foreground ml-4' 
-                      : 'bg-secondary text-foreground mr-4'
-                  }`}>
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
 
           {/* Input */}
           <div className="p-4 border-t border-border">
