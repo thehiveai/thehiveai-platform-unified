@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { Send, MessageSquare, Clock, ChevronLeft, ChevronRight, Maximize2, Minimize2, History, Brain, User, Settings, Paperclip, Type, Mic, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -111,16 +111,27 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
         <>
           {/* Header */}
           <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">Hive OS</h2>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" title="Chat History">
+                  <History className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" title="AI Model Selector">
+                  <Brain className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" title="Personality">
+                  <User className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" title="Settings">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
               {mode === 'fullscreen' && (
                 <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">
                   Fullscreen
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">AI Assistant</p>
           </div>
 
           {/* Messages */}
@@ -155,7 +166,7 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask Hive AI..."
+                placeholder="Ask Buddy Bee..."
                 className="flex-1"
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               />
@@ -165,6 +176,24 @@ const ChatPanel = ({ mode, onModeChange }: ChatPanelProps) => {
                 disabled={!message.trim()}
               >
                 <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Bottom Toolbar */}
+          <div className="px-4 pb-4">
+            <div className="flex items-center justify-center gap-2">
+              <Button variant="ghost" size="icon" title="Attach Files">
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" title="Text Input">
+                <Type className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" title="Voice Input">
+                <Mic className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" title="Conversational Mode">
+                <MessageCircle className="h-4 w-4" />
               </Button>
             </div>
           </div>
