@@ -18,6 +18,19 @@ const UserPage = () => {
     localStorage.setItem('chatMode', chatMode);
   }, [chatMode]);
 
+  useEffect(() => {
+    const handleLaunchApp = (event: CustomEvent) => {
+      console.log('Received launchApp event:', event.detail);
+      setSelectedApp(event.detail);
+    };
+
+    window.addEventListener('launchApp', handleLaunchApp as EventListener);
+    
+    return () => {
+      window.removeEventListener('launchApp', handleLaunchApp as EventListener);
+    };
+  }, []);
+
   const handleAppSelect = (appName: string) => {
     console.log('handleAppSelect called with:', appName);
     setSelectedApp(appName);

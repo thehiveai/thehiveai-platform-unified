@@ -2,11 +2,8 @@ import { Home, Search, Settings, Grid3X3, User, Cloud, Puzzle, Palette } from 'l
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import ThemeForgeApp from './ThemeForgeApp';
 
 interface DesktopFooterProps {
   onAppSelect?: (appName: string) => void;
@@ -16,7 +13,6 @@ const DesktopFooter = ({ onAppSelect }: DesktopFooterProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [selectedApp, setSelectedApp] = useState<string | null>(null);
   
   const appCategories = [
     {
@@ -161,8 +157,14 @@ const DesktopFooter = ({ onAppSelect }: DesktopFooterProps) => {
                             // If we're on a page with app selection (like UserPage)
                             onAppSelect('ThemeForge');
                           } else {
-                            // Launch globally using local state
-                            setSelectedApp('ThemeForge');
+                            // Navigate to UserPage and launch Theme Forge
+                            navigate('/user');
+                            // We'll need to pass the app selection through URL or state
+                            setTimeout(() => {
+                              // This is a workaround - ideally we'd use URL params or global state
+                              const event = new CustomEvent('launchApp', { detail: 'ThemeForge' });
+                              window.dispatchEvent(event);
+                            }, 100);
                           }
                         }
                       }}
@@ -274,29 +276,6 @@ const DesktopFooter = ({ onAppSelect }: DesktopFooterProps) => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      
-      {/* Global Theme Forge App */}
-      {selectedApp === 'ThemeForge' && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Theme Forge
-              </h2>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedApp(null)}>
-                ×
-              </Button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <ThemeForgeApp onGeneratedImage={(imageUrl) => {
-                console.log('Generated image:', imageUrl);
-                toast.success('Background generated! Check My AI Themes folder.');
-              }} />
-            </div>
-          </div>
-        </div>
-      )}
     </footer>
   );
 };
