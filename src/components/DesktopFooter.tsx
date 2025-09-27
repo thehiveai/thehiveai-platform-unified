@@ -14,6 +14,8 @@ const DesktopFooter = ({ onAppSelect }: DesktopFooterProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
+  // Force rebuild - removed selectedApp references
+  
   const appCategories = [
     {
       name: 'Developer Tools',
