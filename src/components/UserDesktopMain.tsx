@@ -1,6 +1,7 @@
 import buddyBee from '../assets/buddy-bee-ref3.png';
 import RightMenuBar from './RightMenuBar';
 import ThemeForgeApp from './ThemeForgeApp';
+import ChatHistory from './ChatHistory';
 import { Button } from '@/components/ui/button';
 import { Palette, X } from 'lucide-react';
 import { useState } from 'react';
@@ -12,7 +13,12 @@ interface UserDesktopMainProps {
 }
 
 const UserDesktopMain = ({ selectedApp, onAppClose }: UserDesktopMainProps) => {
+  const [showChatHistory, setShowChatHistory] = useState(false);
   console.log('UserDesktopMain render, selectedApp:', selectedApp);
+  
+  if (showChatHistory) {
+    return <ChatHistory onClose={() => setShowChatHistory(false)} />;
+  }
   
   return (
     <div className="flex-1 flex h-full">
@@ -53,7 +59,7 @@ const UserDesktopMain = ({ selectedApp, onAppClose }: UserDesktopMainProps) => {
           </div>
         )}
       </main>
-      <RightMenuBar />
+      <RightMenuBar onShowChatHistory={() => setShowChatHistory(true)} />
     </div>
   );
 };

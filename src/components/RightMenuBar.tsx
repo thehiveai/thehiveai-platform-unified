@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FolderOpen, File, Image, Music, Video, Plus, Upload, Download, Trash2, Play, Eye } from 'lucide-react';
+import { FolderOpen, File, Image, Music, Video, Plus, Upload, Download, Trash2, Play, Eye, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -19,7 +19,11 @@ interface FileItem {
   fileType?: 'image' | 'video' | 'audio' | 'document' | 'other';
 }
 
-const RightMenuBar = () => {
+interface RightMenuBarProps {
+  onShowChatHistory?: () => void;
+}
+
+const RightMenuBar = ({ onShowChatHistory }: RightMenuBarProps) => {
   const [isFilesOpen, setIsFilesOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
@@ -143,7 +147,7 @@ const RightMenuBar = () => {
   return (
     <div className="w-80 bg-background/95 backdrop-blur-sm border-l border-border flex flex-col">
       {/* Menu Bar */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border space-y-2">
         <Button
           variant={isFilesOpen ? "default" : "outline"}
           onClick={() => setIsFilesOpen(!isFilesOpen)}
@@ -151,6 +155,14 @@ const RightMenuBar = () => {
         >
           <FolderOpen className="h-4 w-4" />
           My Files
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onShowChatHistory}
+          className="w-full justify-start gap-2"
+        >
+          <MessageSquare className="h-4 w-4" />
+          My Chats
         </Button>
       </div>
 
