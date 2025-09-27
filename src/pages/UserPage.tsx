@@ -12,10 +12,19 @@ const UserPage = () => {
     const savedPreference = localStorage.getItem('chatMode') as ChatMode;
     return savedPreference || 'standard';
   });
+  const [selectedApp, setSelectedApp] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('chatMode', chatMode);
   }, [chatMode]);
+
+  const handleAppSelect = (appName: string) => {
+    setSelectedApp(appName);
+  };
+
+  const handleAppClose = () => {
+    setSelectedApp(null);
+  };
 
   return (
     <div 
@@ -34,9 +43,14 @@ const UserPage = () => {
           mode={chatMode}
           onModeChange={setChatMode}
         />
-        {chatMode !== 'expanded' && <UserDesktopMain />}
+        {chatMode !== 'expanded' && (
+          <UserDesktopMain 
+            selectedApp={selectedApp}
+            onAppClose={handleAppClose}
+          />
+        )}
       </div>
-      <DesktopFooter />
+      <DesktopFooter onAppSelect={handleAppSelect} />
     </div>
   );
 };

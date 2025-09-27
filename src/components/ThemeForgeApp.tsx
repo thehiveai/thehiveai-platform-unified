@@ -66,109 +66,115 @@ const ThemeForgeApp = ({ onGeneratedImage }: ThemeForgeAppProps) => {
   };
 
   return (
-    <div className="p-6 space-y-6 h-full overflow-y-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            AI Background Generator
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="themePrompt">Describe your dream background</Label>
-            <Textarea
-              id="themePrompt"
-              placeholder="e.g., A serene forest with golden sunlight filtering through ancient trees, mystical atmosphere with floating particles..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={4}
-              className="mt-2"
-            />
-          </div>
-          
-          <Button 
-            onClick={handleGenerate} 
-            disabled={isGenerating || !prompt.trim()}
-            className="w-full"
-          >
-            {isGenerating ? (
-              <>
-                <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating with Gemini...
-              </>
-            ) : (
-              <>
-                <Wand2 className="h-4 w-4 mr-2" />
-                Generate Background
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {generatedImage && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Generated Background</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-              <img 
-                src={generatedImage} 
-                alt="Generated background"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleApplyBackground}
-                className="flex-1"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Apply Background
-              </Button>
+    <div className="p-6 space-y-6 h-full flex flex-col">
+      <div className="flex-1 flex gap-6 min-h-0">
+        <div className="flex-1 flex flex-col gap-6">
+          <Card className="flex-shrink-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                AI Background Generator
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="themePrompt">Describe your dream background</Label>
+                <Textarea
+                  id="themePrompt"
+                  placeholder="e.g., A serene forest with golden sunlight filtering through ancient trees, mystical atmosphere with floating particles..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  rows={3}
+                  className="mt-2"
+                />
+              </div>
               
               <Button 
-                onClick={handleDownload}
-                variant="outline"
-                className="flex-1"
+                onClick={handleGenerate} 
+                disabled={isGenerating || !prompt.trim()}
+                className="w-full"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Save to Gallery
+                {isGenerating ? (
+                  <>
+                    <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating with Gemini...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Generate Background
+                  </>
+                )}
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Popular Themes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-2">
-            {[
-              "Cyberpunk neon cityscape with rain reflections",
-              "Peaceful mountain lake at sunset with orange clouds",
-              "Abstract geometric patterns in blue and purple gradients",
-              "Tropical beach with palm trees and turquoise water",
-              "Space nebula with colorful cosmic dust and stars"
-            ].map((suggestion, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                size="sm"
-                className="text-left justify-start h-auto p-3 text-wrap"
-                onClick={() => setPrompt(suggestion)}
-              >
-                {suggestion}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          {generatedImage && (
+            <Card className="flex-1 min-h-0">
+              <CardHeader>
+                <CardTitle>Generated Background</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 h-full flex flex-col">
+                <div className="flex-1 rounded-lg overflow-hidden bg-muted min-h-0">
+                  <img 
+                    src={generatedImage} 
+                    alt="Generated background"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button 
+                    onClick={handleApplyBackground}
+                    className="flex-1"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Apply Background
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleDownload}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Save to Gallery
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <div className="w-80 flex-shrink-0">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Popular Themes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  "Cyberpunk neon cityscape with rain reflections",
+                  "Peaceful mountain lake at sunset with orange clouds",
+                  "Abstract geometric patterns in blue and purple gradients",
+                  "Tropical beach with palm trees and turquoise water",
+                  "Space nebula with colorful cosmic dust and stars"
+                ].map((suggestion, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="sm"
+                    className="text-left justify-start h-auto p-3 text-wrap"
+                    onClick={() => setPrompt(suggestion)}
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
