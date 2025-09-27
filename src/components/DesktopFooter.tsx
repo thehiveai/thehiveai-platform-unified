@@ -1,4 +1,4 @@
-import { Home, Search, Settings, Grid3X3, User, Cloud } from 'lucide-react';
+import { Home, Search, Settings, Grid3X3, User, Cloud, Puzzle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,39 @@ const DesktopFooter = () => {
       name: 'Personalization',
       description: 'Themes, customization, and personal tools',
       apps: ['Theme Studio', 'Widget Creator', 'Custom Shortcuts', 'Profile Manager']
+    }
+  ];
+
+  const connectedAppCategories = [
+    {
+      name: 'Developer Tools',
+      description: 'IDEs, frameworks, and development utilities',
+      apps: ['GitHub', 'GitLab', 'Bitbucket', 'Jenkins', 'Docker Hub', 'VS Code Extensions']
+    },
+    {
+      name: 'Creative Suite',
+      description: 'Design, video, audio, and creative applications',
+      apps: ['Image Forge', 'Creation Hub', 'Film Forge', 'Adobe Creative Cloud', 'Figma', 'Canva']
+    },
+    {
+      name: 'Productivity',
+      description: 'Task management and productivity boosters',
+      apps: ['Notion', 'Trello', 'Asana', 'Monday.com', 'Slack', 'Microsoft Teams']
+    },
+    {
+      name: 'Business Tools',
+      description: 'CRM, accounting, and business management',
+      apps: ['Salesforce', 'HubSpot', 'QuickBooks', 'Stripe', 'Zoom', 'Report Desk']
+    },
+    {
+      name: 'Research & Data',
+      description: 'Analytics, data science, and research tools',
+      apps: ['Google Analytics', 'Tableau', 'Power BI', 'Jupyter', 'R Studio', 'Data Studio']
+    },
+    {
+      name: 'Personalization',
+      description: 'Themes, customization, and personal tools',
+      apps: ['IFTTT', 'Zapier', 'Custom Webhooks', 'API Connectors', 'Theme Studio', 'Widget Creator']
     }
   ];
 
@@ -144,6 +177,40 @@ const DesktopFooter = () => {
             <DropdownMenuItem className="cursor-pointer">
               Dropbox
             </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Connected App Sources */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="flex items-center justify-center w-12 h-12 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
+              title="Connected App Sources"
+            >
+              <Puzzle className="h-6 w-6 text-foreground group-hover:text-primary transition-colors" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-64" align="center" side="top" sideOffset={8}>
+            <DropdownMenuLabel>Connected App Sources</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {connectedAppCategories.map((category, index) => (
+              <DropdownMenuSub key={index}>
+                <DropdownMenuSubTrigger>
+                  <span className="font-medium">{category.name}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-48">
+                  <div className="px-2 py-1 text-xs text-muted-foreground mb-1">
+                    {category.description}
+                  </div>
+                  <DropdownMenuSeparator />
+                  {category.apps.map((app, appIndex) => (
+                    <DropdownMenuItem key={appIndex} className="cursor-pointer">
+                      {app}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
         
