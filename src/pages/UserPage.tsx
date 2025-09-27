@@ -19,6 +19,7 @@ const UserPage = () => {
   }, [chatMode]);
 
   const handleAppSelect = (appName: string) => {
+    console.log('handleAppSelect called with:', appName);
     setSelectedApp(appName);
   };
 

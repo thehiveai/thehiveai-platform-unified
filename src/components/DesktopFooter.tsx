@@ -150,7 +150,9 @@ const DesktopFooter = ({ onAppSelect }: DesktopFooterProps) => {
                       key={appIndex} 
                       className="cursor-pointer"
                       onClick={() => {
+                        console.log('App clicked:', app);
                         if (app === 'Theme Forge') {
+                          console.log('Theme Forge clicked, calling onAppSelect');
                           onAppSelect?.('ThemeForge');
                         }
                       }}

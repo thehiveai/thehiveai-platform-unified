@@ -12,6 +12,8 @@ interface UserDesktopMainProps {
 }
 
 const UserDesktopMain = ({ selectedApp, onAppClose }: UserDesktopMainProps) => {
+  console.log('UserDesktopMain render, selectedApp:', selectedApp);
+  
   return (
     <div className="flex-1 flex h-full">
       <main className="flex-1 flex flex-col">
