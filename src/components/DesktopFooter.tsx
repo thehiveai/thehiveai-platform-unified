@@ -1,14 +1,18 @@
-import { Home, Search, Settings, Grid3X3, User, Cloud, Puzzle } from 'lucide-react';
+import { Home, Search, Settings, Grid3X3, User, Cloud, Puzzle, Palette } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import ThemeForgeApp from './ThemeForgeApp';
 
 const DesktopFooter = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<string | null>(null);
   
   const appCategories = [
     {
@@ -142,8 +146,19 @@ const DesktopFooter = () => {
                   </div>
                   <DropdownMenuSeparator />
                   {category.apps.map((app, appIndex) => (
-                    <DropdownMenuItem key={appIndex} className="cursor-pointer">
-                      {app}
+                    <DropdownMenuItem 
+                      key={appIndex} 
+                      className="cursor-pointer"
+                      onClick={() => {
+                        if (app === 'Theme Forge') {
+                          setSelectedApp('ThemeForge');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {app === 'Theme Forge' && <Palette className="h-4 w-4" />}
+                        {app}
+                      </div>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
@@ -247,6 +262,29 @@ const DesktopFooter = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      
+      {/* App Workspace */}
+      {selectedApp === 'ThemeForge' && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="h-full flex flex-col">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Theme Forge
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedApp(null)}>
+                ×
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ThemeForgeApp onGeneratedImage={(imageUrl) => {
+                console.log('Generated image:', imageUrl);
+                toast.success('Background generated! Check My AI Themes folder.');
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
     </footer>
   );
 };

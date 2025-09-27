@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { FolderOpen, File, Image, Music, Video, Plus, Upload } from 'lucide-react';
+import { FolderOpen, File, Image, Music, Video, Plus, Upload, Download, Trash2, Play, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import ThemeForgeApp from './ThemeForgeApp';
+import { toast } from 'sonner';
 
 interface FileItem {
   id: string;
@@ -14,11 +14,14 @@ interface FileItem {
   type: 'file' | 'folder';
   icon: any;
   children?: FileItem[];
+  size?: string;
+  dateModified?: string;
+  fileType?: 'image' | 'video' | 'audio' | 'document' | 'other';
 }
 
 const RightMenuBar = () => {
-  const [selectedApp, setSelectedApp] = useState<string | null>(null);
   const [isFilesOpen, setIsFilesOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
     {
       id: 'documents',
@@ -58,12 +61,74 @@ const RightMenuBar = () => {
     }
   ]);
 
+  const handleFileClick = (item: FileItem) => {
+    if (item.type === 'file') {
+      setSelectedFile(item);
+    }
+  };
+
+  const handleFileAction = (action: 'download' | 'delete' | 'view', file: FileItem) => {
+    switch (action) {
+      case 'download':
+        toast.success(`Downloading ${file.name}`);
+        break;
+      case 'delete':
+        toast.success(`${file.name} deleted`);
+        break;
+      case 'view':
+        toast.success(`Opening ${file.name}`);
+        break;
+    }
+  };
+
   const renderFileTree = (items: FileItem[], level = 0) => {
     return items.map((item) => (
       <div key={item.id} className={`ml-${level * 4}`}>
-        <div className="flex items-center gap-2 p-2 hover:bg-secondary/50 rounded-md cursor-pointer">
-          <item.icon className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">{item.name}</span>
+        <div 
+          className="flex items-center justify-between p-2 hover:bg-secondary/50 rounded-md cursor-pointer group"
+          onClick={() => handleFileClick(item)}
+        >
+          <div className="flex items-center gap-2">
+            <item.icon className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{item.name}</span>
+          </div>
+          {item.type === 'file' && (
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFileAction('view', item);
+                }}
+              >
+                <Eye className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFileAction('download', item);
+                }}
+              >
+                <Download className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFileAction('delete', item);
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
         {item.children && item.children.length > 0 && (
           <div className="ml-4">
@@ -74,13 +139,6 @@ const RightMenuBar = () => {
     ));
   };
 
-  const handleAppSelect = (appName: string) => {
-    setSelectedApp(appName);
-  };
-
-  const closeApp = () => {
-    setSelectedApp(null);
-  };
 
   return (
     <div className="w-80 bg-background/95 backdrop-blur-sm border-l border-border flex flex-col">
@@ -154,40 +212,8 @@ const RightMenuBar = () => {
                   </Dialog>
                 </div>
               </div>
-              
-              <div className="pt-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => handleAppSelect('ThemeForge')}
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Theme Forge
-                </Button>
-              </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* App Workspace */}
-      {selectedApp === 'ThemeForge' && (
-        <div className="absolute inset-0 z-50 bg-background">
-          <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Theme Forge</h2>
-              <Button variant="ghost" size="sm" onClick={closeApp}>
-                ×
-              </Button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <ThemeForgeApp onGeneratedImage={(imageUrl) => {
-                // Here we would save the generated image to My AI Themes folder
-                console.log('Generated image:', imageUrl);
-              }} />
-            </div>
-          </div>
         </div>
       )}
     </div>
