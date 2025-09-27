@@ -12,10 +12,33 @@ const DesktopOS = () => {
     const savedPreference = localStorage.getItem('chatMode') as ChatMode;
     return savedPreference || 'standard';
   });
+  const [selectedApp, setSelectedApp] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('chatMode', chatMode);
   }, [chatMode]);
+
+  useEffect(() => {
+    const handleLaunchApp = (event: CustomEvent) => {
+      console.log('Received launchApp event:', event.detail);
+      setSelectedApp(event.detail);
+    };
+
+    window.addEventListener('launchApp', handleLaunchApp as EventListener);
+    
+    return () => {
+      window.removeEventListener('launchApp', handleLaunchApp as EventListener);
+    };
+  }, []);
+
+  const handleAppSelect = (appName: string) => {
+    console.log('handleAppSelect called with:', appName);
+    setSelectedApp(appName);
+  };
+
+  const handleAppClose = () => {
+    setSelectedApp(null);
+  };
 
   return (
     <div 
@@ -34,9 +57,14 @@ const DesktopOS = () => {
           mode={chatMode}
           onModeChange={setChatMode}
         />
-        {chatMode !== 'expanded' && <DesktopMain />}
+        {chatMode !== 'expanded' && (
+          <DesktopMain 
+            selectedApp={selectedApp}
+            onAppClose={handleAppClose}
+          />
+        )}
       </div>
-      <DesktopFooter />
+      <DesktopFooter onAppSelect={handleAppSelect} />
     </div>
   );
 };

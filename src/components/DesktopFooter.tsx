@@ -14,8 +14,6 @@ const DesktopFooter = ({ onAppSelect }: DesktopFooterProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
-  // Force rebuild - removed selectedApp references
-  
   const appCategories = [
     {
       name: 'Developer Tools',
@@ -155,19 +153,7 @@ const DesktopFooter = ({ onAppSelect }: DesktopFooterProps) => {
                         console.log('App clicked:', app);
                         if (app === 'Theme Forge') {
                           console.log('Theme Forge clicked, launching app');
-                          if (onAppSelect) {
-                            // If we're on a page with app selection (like UserPage)
-                            onAppSelect('ThemeForge');
-                          } else {
-                            // Navigate to UserPage and launch Theme Forge
-                            navigate('/user');
-                            // We'll need to pass the app selection through URL or state
-                            setTimeout(() => {
-                              // This is a workaround - ideally we'd use URL params or global state
-                              const event = new CustomEvent('launchApp', { detail: 'ThemeForge' });
-                              window.dispatchEvent(event);
-                            }, 100);
-                          }
+                          onAppSelect?.('ThemeForge');
                         }
                       }}
                     >
