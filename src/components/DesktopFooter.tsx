@@ -39,7 +39,7 @@ const DesktopFooter = () => {
     {
       name: 'Personalization',
       description: 'Themes, customization, and personal tools',
-      apps: ['Theme Studio', 'Widget Creator', 'Custom Shortcuts', 'Profile Manager']
+      apps: ['Theme Forge', 'Widget Creator', 'Custom Shortcuts', 'Profile Manager']
     }
   ];
 
