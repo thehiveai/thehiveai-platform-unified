@@ -1,4 +1,4 @@
-import { Home, Search, Settings, Grid3X3, User } from 'lucide-react';
+import { Home, Search, Settings, Grid3X3, User, Cloud } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -116,6 +116,34 @@ const DesktopFooter = () => {
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Cloud Storage Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="flex items-center justify-center w-12 h-12 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
+              title="Cloud Storage"
+            >
+              <Cloud className="h-6 w-6 text-foreground group-hover:text-primary transition-colors" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48" align="center" side="top" sideOffset={8}>
+            <DropdownMenuLabel>Cloud Storage</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer">
+              OneDrive Personal
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              OneDrive Business
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              Google Drive
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              Dropbox
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         
