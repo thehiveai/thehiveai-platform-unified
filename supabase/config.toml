@@ -48,3 +48,6 @@ port = 54329
 
 [functions.buddy-organize-chats]
 verify_jwt = false
+
+[functions.generate-theme-image]
+verify_jwt = false
