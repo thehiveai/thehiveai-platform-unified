@@ -1,25 +1,15 @@
-import path from 'path';
+import path from "path";
 
-/** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-
-  // Keep CI green while we finish deployment hardening
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
-
-  // Webpack configuration to handle path aliases
-  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Add alias for @ imports
+  experimental: { externalDir: true },
+  webpack: (config) => {
+    config.resolve = config.resolve || {};
     config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': path.resolve('./src'),
+      ...(config.resolve.alias || {}),
+      "@shared": path.resolve(__dirname, "../shared"),
     };
-
     return config;
   },
 };
 
 export default nextConfig;
-
-
