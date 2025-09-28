@@ -1,3 +1,4 @@
+import "./boot/verify-supabase";
 import "./boot/verify-backend";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
@@ -11,6 +12,7 @@ console.log("Shared add(2,3) =", add(2, 3));
 
 const testUser: HiveUser = { id: "1", name: "Papa Joe" };
 console.log("Shared type test:", testUser);
+
 
 
 
