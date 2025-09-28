@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@shared/*": ["../shared/*"] },
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/app/api/healthz/route.ts",
+    "src/app/api/supa-ping/route.ts"
+  ]
+}

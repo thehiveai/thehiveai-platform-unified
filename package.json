@@ -79,6 +79,8 @@
     "start:backend": "cd backend && npm start",
     "dev:backend": "cd backend && npm run dev",
     "build:backend": "cd backend && npm run build",
-    "build": "vite build"
+    "build": "vite build",
+    "typecheck:frontend": "tsc --noEmit -p tsconfig.smoke.frontend.json",
+    "typecheck:backend": "cd backend && tsc --noEmit -p tsconfig.smoke.json"
   }
 }
