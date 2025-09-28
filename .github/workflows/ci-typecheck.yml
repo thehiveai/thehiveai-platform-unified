@@ -17,15 +17,15 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install root deps (non-strict)
-        run: npm install --no-fund --no-audit
+      - name: Install root deps (strict)
+        run: npm ci
 
       - name: Frontend typecheck
         run: npm run typecheck:frontend
 
-      - name: Install backend deps (non-strict)
+      - name: Install backend deps (strict)
         working-directory: backend
-        run: npm install --no-fund --no-audit
+        run: npm ci
 
       - name: Backend typecheck
         working-directory: backend
