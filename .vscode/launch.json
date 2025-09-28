@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Open Frontend (8080)",
+      "type": "pwa-msedge",
+      "request": "launch",
+      "url": "http://localhost:8080",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "name": "Attach Backend (Node)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "protocol": "inspector"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Dev: Frontend + Backend",
+      "configurations": ["Open Frontend (8080)"]
+    }
+  ]
+}

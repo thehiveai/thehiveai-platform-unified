@@ -45,3 +45,5 @@ backend/ops/backups/
 # Allow VS Code tasks.json in repo
 !.vscode/
 !.vscode/tasks.json
+# allow workspace tasks for team
+!.vscode/launch.json

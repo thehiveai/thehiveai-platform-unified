@@ -1,10 +1,37 @@
 {
   "version": "2.0.0",
   "tasks": [
-    { "label": "Frontend: Vite (8080)", "type": "shell", "command": "npm run dev -- --port 8080", "options": { "cwd": "${workspaceFolder}" } },
-    { "label": "Backend: Next (3000)",  "type": "shell", "command": "npm run dev",                "options": { "cwd": "${workspaceFolder}/backend" } },
-    { "label": "Typecheck: Frontend",    "type": "shell", "command": "npm run typecheck:frontend", "options": { "cwd": "${workspaceFolder}" } },
-    { "label": "Typecheck: Backend",     "type": "shell", "command": "npm run typecheck:backend",  "options": { "cwd": "${workspaceFolder}" } },
-    { "label": "Dev: Frontend+Backend",  "dependsOn": ["Frontend: Vite (8080)", "Backend: Next (3000)"], "dependsOrder": "parallel" }
+    {
+      "label": "Frontend: Vite (8080)",
+      "type": "shell",
+      "command": "npm run dev -- --port 8080 --host 0.0.0.0",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "VITE_API_BASE_URL": "http://localhost:3000"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: Next (3000)",
+      "type": "shell",
+      "command": "npm run dev -- -p 3000",
+      "options": {
+        "cwd": "${workspaceFolder}\\backend"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Frontend + Backend",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "Frontend: Vite (8080)",
+        "Backend: Next (3000)"
+      ],
+      "group": "build"
+    }
   ]
 }
