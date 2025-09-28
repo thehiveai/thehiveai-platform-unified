@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"C:\\Users\\JoeTurso\\hive-mvp-web\\src\\app\\admin\\analytics\\page.tsx\")",
+      "Bash(Select-Object -Index 148,149,150,151,152,153,154)",
+      "Bash(powershell:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx next:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(tasklist)",
+      "Bash(findstr:*)",
+      "Bash(npm ci:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git lfs track:*)",
+      "Bash(git checkout:*)",
+      "Bash(git lfs migrate:*)",
+      "Bash(git rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,317 @@
+{
+  "workflows": [
+    {
+      "name": "Hive Context Engine - Message Processing",
+      "description": "Real-time processing of chat messages for context indexing",
+      "trigger": {
+        "type": "webhook",
+        "path": "/webhook/hive-message-created",
+        "method": "POST",
+        "authentication": "header",
+        "header_name": "x-webhook-token",
+        "header_value": "{{$env.HIVE_WEBHOOK_TOKEN}}"
+      },
+      "nodes": [
+        {
+          "name": "Validate Input",
+          "type": "function",
+          "code": "// Validate required fields\nconst { org_id, thread_id, message_id, content, role } = $input.first().json;\n\nif (!org_id || !content) {\n  throw new Error('Missing required fields: org_id, content');\n}\n\nif (role === 'system') {\n  // Skip system messages\n  return [];\n}\n\nreturn [{\n  json: {\n    org_id,\n    thread_id,\n    message_id,\n    content: content.substring(0, 8000), // Limit content length\n    metadata: {\n      role,\n      timestamp: new Date().toISOString(),\n      source: 'chat_message'\n    }\n  }\n}];"
+        },
+        {
+          "name": "Generate Embedding",
+          "type": "http_request",
+          "method": "POST",
+          "url": "https://api.openai.com/v1/embeddings",
+          "headers": {
+            "Authorization": "Bearer {{$env.OPENAI_API_KEY}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "model": "text-embedding-3-small",
+            "input": "={{$json.content}}"
+          }
+        },
+        {
+          "name": "Extract Entities",
+          "type": "http_request",
+          "method": "POST",
+          "url": "https://api.openai.com/v1/chat/completions",
+          "headers": {
+            "Authorization": "Bearer {{$env.OPENAI_API_KEY}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Extract important entities from this legal/business conversation. Focus on: People, Companies, Legal matter numbers (XXXX-XXX format), Dates, Legal concepts, Locations, Financial amounts. Text: \"={{$('Validate Input').first().json.content}}\" Return JSON array: [{\"type\": \"person\", \"value\": \"John Smith\", \"confidence\": 0.95, \"context_snippet\": \"snippet\"}]"
+              }
+            ],
+            "temperature": 0.1,
+            "max_tokens": 1000
+          }
+        },
+        {
+          "name": "Store Context",
+          "type": "http_request",
+          "method": "POST",
+          "url": "{{$env.HIVE_API_URL}}/api/context/webhook",
+          "headers": {
+            "x-webhook-token": "{{$env.N8N_WEBHOOK_TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "event_type": "message_created",
+            "org_id": "={{$('Validate Input').first().json.org_id}}",
+            "thread_id": "={{$('Validate Input').first().json.thread_id}}",
+            "message_id": "={{$('Validate Input').first().json.message_id}}",
+            "content": "={{$('Validate Input').first().json.content}}",
+            "metadata": {
+              "embedding": "={{$('Generate Embedding').first().json.data[0].embedding}}",
+              "entities": "={{JSON.parse($('Extract Entities').first().json.choices[0].message.content || '[]')}}",
+              "processing_timestamp": "={{new Date().toISOString()}}",
+              "n8n_execution_id": "={{$execution.id}}"
+            }
+          }
+        },
+        {
+          "name": "Log Success",
+          "type": "function",
+          "code": "console.log('Successfully processed message for context:', {\n  org_id: $('Validate Input').first().json.org_id,\n  message_id: $('Validate Input').first().json.message_id,\n  entities_found: JSON.parse($('Extract Entities').first().json.choices[0].message.content || '[]').length\n});\n\nreturn [{ json: { success: true, timestamp: new Date().toISOString() } }];"
+        }
+      ]
+    },
+    {
+      "name": "Hive Context Engine - Thread Summarization",
+      "description": "Generate summaries for conversation threads",
+      "trigger": {
+        "type": "cron",
+        "expression": "*/15 * * * *",
+        "description": "Run every 15 minutes"
+      },
+      "nodes": [
+        {
+          "name": "Get Active Threads",
+          "type": "http_request",
+          "method": "GET",
+          "url": "{{$env.HIVE_API_URL}}/api/threads?active_since={{new Date(Date.now() - 15*60*1000).toISOString()}}",
+          "headers": {
+            "x-api-key": "{{$env.HIVE_API_KEY}}"
+          }
+        },
+        {
+          "name": "Process Each Thread",
+          "type": "split_in_batches",
+          "batch_size": 5
+        },
+        {
+          "name": "Get Thread Messages",
+          "type": "http_request",
+          "method": "GET",
+          "url": "{{$env.HIVE_API_URL}}/api/threads/{{$json.id}}/messages",
+          "headers": {
+            "x-api-key": "{{$env.HIVE_API_KEY}}"
+          }
+        },
+        {
+          "name": "Generate Summary",
+          "type": "http_request",
+          "method": "POST",
+          "url": "https://api.openai.com/v1/chat/completions",
+          "headers": {
+            "Authorization": "Bearer {{$env.OPENAI_API_KEY}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Analyze this thread conversation and provide a comprehensive summary. Messages: {{$('Get Thread Messages').first().json.messages.map(m => m.content).join('\\n\\n').substring(0, 6000)}} Provide JSON: {\"summary_text\": \"summary\", \"key_points\": [\"point1\"], \"entities_mentioned\": [\"entity1\"], \"confidence_score\": 0.85}"
+              }
+            ],
+            "temperature": 0.2,
+            "max_tokens": 800
+          }
+        },
+        {
+          "name": "Store Summary",
+          "type": "http_request",
+          "method": "POST",
+          "url": "{{$env.HIVE_API_URL}}/api/context/webhook",
+          "headers": {
+            "x-webhook-token": "{{$env.N8N_WEBHOOK_TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "event_type": "thread_updated",
+            "org_id": "={{$('Process Each Thread').first().json.org_id}}",
+            "thread_id": "={{$('Process Each Thread').first().json.id}}",
+            "metadata": "={{JSON.parse($('Generate Summary').first().json.choices[0].message.content || '{}')}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hive Context Engine - Context Retrieval",
+      "description": "Retrieve relevant context for AI model queries",
+      "trigger": {
+        "type": "webhook",
+        "path": "/webhook/hive-context-request",
+        "method": "POST",
+        "authentication": "header",
+        "header_name": "x-webhook-token",
+        "header_value": "{{$env.HIVE_WEBHOOK_TOKEN}}"
+      },
+      "nodes": [
+        {
+          "name": "Validate Context Request",
+          "type": "function",
+          "code": "const { org_id, query, thread_id, limit, similarity_threshold } = $input.first().json;\n\nif (!org_id || !query) {\n  throw new Error('Missing required fields: org_id, query');\n}\n\nreturn [{\n  json: {\n    org_id,\n    query: query.substring(0, 2000), // Limit query length\n    thread_id,\n    limit: limit || 10,\n    similarity_threshold: similarity_threshold || 0.7\n  }\n}];"
+        },
+        {
+          "name": "Generate Query Embedding",
+          "type": "http_request",
+          "method": "POST",
+          "url": "https://api.openai.com/v1/embeddings",
+          "headers": {
+            "Authorization": "Bearer {{$env.OPENAI_API_KEY}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "model": "text-embedding-3-small",
+            "input": "={{$json.query}}"
+          }
+        },
+        {
+          "name": "Search Context",
+          "type": "http_request",
+          "method": "POST",
+          "url": "{{$env.HIVE_API_URL}}/api/context/webhook",
+          "headers": {
+            "x-webhook-token": "{{$env.N8N_WEBHOOK_TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "event_type": "context_request",
+            "org_id": "={{$('Validate Context Request').first().json.org_id}}",
+            "thread_id": "={{$('Validate Context Request').first().json.thread_id}}",
+            "content": "={{$('Validate Context Request').first().json.query}}",
+            "metadata": {
+              "query_embedding": "={{$('Generate Query Embedding').first().json.data[0].embedding}}",
+              "limit": "={{$('Validate Context Request').first().json.limit}}",
+              "similarity_threshold": "={{$('Validate Context Request').first().json.similarity_threshold}}"
+            }
+          }
+        },
+        {
+          "name": "Format Response",
+          "type": "function",
+          "code": "const contextResults = $('Search Context').first().json.context_results || [];\n\n// Format context for AI model injection\nconst formattedContext = contextResults.map(item => ({\n  content: item.content_text || item.content,\n  similarity: item.similarity,\n  thread_id: item.thread_id,\n  created_at: item.created_at\n}));\n\nreturn [{\n  json: {\n    success: true,\n    context_items: formattedContext,\n    count: formattedContext.length,\n    query: $('Validate Context Request').first().json.query\n  }\n}];"
+        }
+      ]
+    },
+    {
+      "name": "Hive Context Engine - DLP Context Scanning",
+      "description": "Scan context data for DLP violations",
+      "trigger": {
+        "type": "webhook",
+        "path": "/webhook/hive-dlp-scan",
+        "method": "POST",
+        "authentication": "header",
+        "header_name": "x-webhook-token",
+        "header_value": "{{$env.HIVE_WEBHOOK_TOKEN}}"
+      },
+      "nodes": [
+        {
+          "name": "Get DLP Rules",
+          "type": "http_request",
+          "method": "GET",
+          "url": "{{$env.HIVE_API_URL}}/api/admin/orgs/{{$json.org_id}}/dlp",
+          "headers": {
+            "x-api-key": "{{$env.HIVE_API_KEY}}"
+          }
+        },
+        {
+          "name": "Scan Content",
+          "type": "function",
+          "code": "const content = $input.first().json.content;\nconst rules = $('Get DLP Rules').first().json.rules || [];\n\nconst violations = [];\n\nfor (const rule of rules) {\n  try {\n    const regex = new RegExp(rule.pattern, 'gi');\n    const matches = content.match(regex);\n    \n    if (matches) {\n      violations.push({\n        rule_id: rule.id,\n        pattern: rule.pattern,\n        description: rule.description,\n        matches: matches,\n        is_blocking: rule.is_blocking\n      });\n    }\n  } catch (error) {\n    console.error('Invalid regex pattern:', rule.pattern);\n  }\n}\n\nreturn [{\n  json: {\n    org_id: $input.first().json.org_id,\n    content_id: $input.first().json.content_id,\n    violations: violations,\n    has_blocking_violations: violations.some(v => v.is_blocking),\n    scan_timestamp: new Date().toISOString()\n  }\n}];"
+        },
+        {
+          "name": "Handle Violations",
+          "type": "if",
+          "conditions": {
+            "boolean": [
+              {
+                "value1": "={{$json.has_blocking_violations}}",
+                "operation": "equal",
+                "value2": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "Block Content",
+          "type": "http_request",
+          "method": "POST",
+          "url": "{{$env.HIVE_API_URL}}/api/context/block",
+          "headers": {
+            "x-webhook-token": "{{$env.N8N_WEBHOOK_TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "content_id": "={{$('Scan Content').first().json.content_id}}",
+            "violations": "={{$('Scan Content').first().json.violations}}",
+            "action": "block"
+          }
+        },
+        {
+          "name": "Log Violations",
+          "type": "http_request",
+          "method": "POST",
+          "url": "{{$env.HIVE_API_URL}}/api/admin/orgs/{{$('Scan Content').first().json.org_id}}/audits",
+          "headers": {
+            "x-api-key": "{{$env.HIVE_API_KEY}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "action": "dlp_violation",
+            "target_type": "context_content",
+            "target_id": "={{$('Scan Content').first().json.content_id}}",
+            "meta": {
+              "violations": "={{$('Scan Content').first().json.violations}}",
+              "scan_result": "={{$('Scan Content').first().json.has_blocking_violations ? 'blocked' : 'flagged'}}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "environment_variables": {
+    "HIVE_API_URL": "https://your-hive-app.azurewebsites.net",
+    "HIVE_WEBHOOK_TOKEN": "your-secure-webhook-token",
+    "HIVE_API_KEY": "your-hive-api-key",
+    "OPENAI_API_KEY": "your-openai-api-key"
+  },
+  "setup_instructions": [
+    "1. Install N8N on Azure Container Instance or VM",
+    "2. Import these workflows into your N8N instance",
+    "3. Set up environment variables in N8N settings",
+    "4. Configure webhook URLs in your Hive application",
+    "5. Test each workflow with sample data",
+    "6. Enable workflows and monitor execution logs",
+    "7. Set up alerts for workflow failures"
+  ],
+  "webhook_endpoints": {
+    "message_processing": "/webhook/hive-message-created",
+    "context_retrieval": "/webhook/hive-context-request", 
+    "dlp_scanning": "/webhook/hive-dlp-scan"
+  },
+  "monitoring": {
+    "success_rate_threshold": 95,
+    "max_execution_time": 30000,
+    "alert_channels": ["email", "slack"],
+    "log_retention_days": 30
+  }
+}

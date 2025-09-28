@@ -1,0 +1,4 @@
+project_id = "jkdcreyvnvotqxkhccjo"
+
+[functions.test-service-role]
+verify_jwt = false

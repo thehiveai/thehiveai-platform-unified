@@ -1,0 +1,842 @@
+// src/app/api/chat/route.ts
+import { NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { ensureUser, resolveOrgId, assertMembership } from "@/lib/membership";
+import { addMessage } from "@/lib/threads";
+import { getContextEnhancedPrompt, ContextPerformanceMonitor } from "@/lib/hotContext";
+
+import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
+import crypto from "crypto";
+
+/**
+ * ENV & Clients - Support both regular OpenAI and Azure OpenAI
+ */
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || "";
+const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || "";
+const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || "2024-02-15-preview";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+
+// For chat responses, use regular OpenAI since Azure OpenAI chat models are not deployed
+const effectiveOpenAIKey = OPENAI_API_KEY;
+
+if (!effectiveOpenAIKey) {
+
+}
+if (!GEMINI_API_KEY) console.warn("GEMINI_API_KEY missing (Gemini will be unavailable).");
+if (!ANTHROPIC_API_KEY) console.warn("ANTHROPIC_API_KEY missing (Claude will be unavailable).");
+
+// Initialize OpenAI client for chat responses
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
+
+// Log which OpenAI service is being used
+console.log('🔧 OpenAI Configuration: Regular OpenAI (for chat responses)');
+
+/**
+ * Types
+ */
+type Provider = "openai" | "gemini" | "claude";
+type Role = "system" | "user" | "assistant" | "tool";
+
+interface PostBody {
+  threadId?: string;
+  message: string;
+  provider?: Provider;   // "openai" | "gemini" | "claude"
+  modelId?: string;      // optional override
+  systemPrompt?: string; // optional org/system content
+  citations?: boolean;   // default true
+  disclaimer?: string;   // default "Not legal advice."
+  attachments?: string[]; // array of file attachment IDs
+  conversationalMode?: boolean; // whether to use context from previous conversations
+}
+
+/**
+ * Model defaults
+ * - OpenAI: detail-focused small model
+ * - Gemini: 1.5-pro (when available)
+ * - Claude: 3-haiku (fast, broadly available)
+ */
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_CLAUDE_MODEL = "claude-3-haiku-20240307";
+
+/**
+ * Helpers: hashing, audits, persistence, DLP & history mapping
+ */
+function sha256Hex(s: string) {
+  return crypto.createHash("sha256").update(s, "utf8").digest("hex");
+}
+
+async function insertAudit(
+  orgId: string,
+  actorId: string | null,
+  action: string,
+  targetType: string | null,
+  targetId: string | null,
+  content: string,
+  meta: any = {}
+) {
+  const { error } = await supabaseAdmin.from("audit_logs").insert({
+    org_id: orgId,
+    actor_id: actorId,
+    action,
+    target_type: targetType,
+    target_id: targetId,
+    content_sha256: sha256Hex(content),
+    meta,
+  });
+  if (error) console.error("audit insert error", error);
+}
+
+async function ensureThread(orgId: string, userId: string, threadId?: string) {
+  if (threadId) {
+    // Verify thread exists and belongs to org
+    const { data, error } = await supabaseAdmin
+      .from("threads")
+      .select("id")
+      .eq("id", threadId)
+      .eq("org_id", orgId)
+      .single();
+    
+    if (error || !data) {
+      // Thread doesn't exist, create new one
+      const { data: newThread, error: createError } = await supabaseAdmin
+        .from("threads")
+        .insert({ org_id: orgId, created_by: userId, title: "New thread" })
+        .select("id")
+        .single();
+      if (createError) throw createError;
+      return newThread.id as string;
+    }
+    return threadId;
+  }
+  
+  // No threadId provided, create new thread
+  const { data, error } = await supabaseAdmin
+    .from("threads")
+    .insert({ org_id: orgId, created_by: userId, title: "New thread" })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+// Use the thread utilities instead of direct database access
+async function insertMessage(params: {
+  orgId: string;
+  threadId: string;
+  role: Role;
+  content: string;
+  provider?: Provider | null;
+  modelId?: string | null;
+  createdBy: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}) {
+  const message = await addMessage({
+    threadId: params.threadId,
+    orgId: params.orgId,
+    role: params.role,
+    content: params.content,
+    provider: params.provider || undefined,
+    modelId: params.modelId || undefined,
+    inputTokens: params.inputTokens,
+    outputTokens: params.outputTokens,
+    createdBy: params.createdBy,
+  });
+  return message.id;
+}
+
+async function insertInvocation(meta: {
+  orgId: string;
+  threadId: string;
+  messageId?: string | null;
+  provider: Provider;
+  modelId: string;
+  latencyMs: number;
+  inTok?: number;
+  outTok?: number;
+  costUsd?: number;
+}) {
+  const { error } = await supabaseAdmin.from("model_invocations").insert({
+    org_id: meta.orgId,
+    thread_id: meta.threadId,
+    message_id: meta.messageId ?? null,
+    provider: meta.provider,
+    model_id: meta.modelId,
+    latency_ms: meta.latencyMs,
+    input_tokens: meta.inTok ?? 0,
+    output_tokens: meta.outTok ?? 0,
+    cost_usd: meta.costUsd ?? 0,
+  });
+  if (error) console.error("invocation insert error", error);
+}
+
+async function getActiveDLPRules(orgId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("dlp_rules")
+    .select("id, pattern, is_blocking, description")
+    .eq("org_id", orgId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+function applyDLP(
+  rules: { pattern: string; is_blocking: boolean }[],
+  text: string
+) {
+  // Returns: { blocked: boolean, redactedText: string, triggered?: rule }
+  let blocked = false;
+  let redacted = text;
+  let triggered: any = null;
+
+  for (const r of rules) {
+    const re = new RegExp(r.pattern, "gi");
+    if (re.test(text)) {
+      triggered = r;
+      if (r.is_blocking) {
+        blocked = true;
+        break;
+      } else {
+        redacted = redacted.replace(re, "•••");
+      }
+    }
+  }
+  return { blocked, redactedText: redacted, triggered };
+}
+
+function mapHistoryForOpenAI(history: { role: Role; content: string }[]) {
+  return history
+    .filter((m) => m.role !== "tool") // Filter out tool messages for OpenAI
+    .map((m) => ({ 
+      role: m.role as "system" | "user" | "assistant", 
+      content: m.content 
+    }));
+}
+
+function mapHistoryForGemini(history: { role: Role; content: string }[]) {
+  // Gemini doesn't support system messages in history, so filter them out
+  // and only include user/assistant messages
+  return history
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+}
+
+function mapHistoryForClaude(history: { role: Role; content: string }[]) {
+  // Claude supports messages with role "user" or "assistant"; system goes in "system" param
+  return history
+    .filter((m) => m.role !== "system")
+    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+}
+
+/** ------------------------------------------------------------------------
+ * ADDED: Tenant settings loader + model guard
+ * -----------------------------------------------------------------------*/
+
+// ADDED: Type for settings and defaults
+type TenantSettings = {
+  modelEnabled: { openai: boolean; gemini: boolean; anthropic: boolean };
+  retentionDays: number;
+  legalHold: boolean;
+};
+
+const DEFAULT_SETTINGS: TenantSettings = {
+  modelEnabled: { openai: true, gemini: true, anthropic: true },
+  retentionDays: 90,
+  legalHold: false,
+};
+
+// ADDED: load settings by merging defaults + tenant overrides
+async function loadTenantSettings(orgId: string): Promise<TenantSettings> {
+  const { data, error } = await supabaseAdmin
+    .from("tenant_settings")
+    .select("key, value")
+    .eq("org_id", orgId);
+  if (error) throw error;
+
+  const merged: TenantSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  for (const row of data ?? []) {
+    if (row.key in merged) {
+      (merged as any)[row.key] = row.value;
+    }
+  }
+  return merged;
+}
+
+/**
+ * Route (POST /api/chat)
+ */
+export async function POST(req: NextRequest) {
+  // Runtime guard: ensure OPENAI_API_KEY exists (avoid import-time failures)
+  if (!process.env.OPENAI_API_KEY) {
+    return new Response(JSON.stringify({ error: "Server misconfigured: OPENAI_API_KEY missing" }), { status: 500 });
+  }
+  // Auth/session
+  const session = await getServerSession(authOptions);
+  if (!session) return new Response("Unauthorized", { status: 401 });
+
+  // Ensure internal user + org
+  const userId = await ensureUser(session); // internal app.users.id
+  const orgId = await resolveOrgId(userId);
+  await assertMembership(orgId, userId);
+
+  // Parse body
+  let body: PostBody;
+  try {
+    body = (await req.json()) as PostBody;
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
+
+  const {
+    threadId: maybeThreadId,
+    message,
+    provider = "openai",
+    modelId,
+    systemPrompt = "You are a helpful assistant. Be accurate and concise.",
+    citations = true,
+    disclaimer = "Not legal advice.",
+    attachments = [],
+    conversationalMode = false,
+  } = body;
+
+  if (!message || typeof message !== "string") {
+    return new Response("Message is required", { status: 400 });
+  }
+
+  // Ensure thread
+  const threadId = await ensureThread(orgId, userId, maybeThreadId);
+
+  // DLP on INPUT
+  const rules = await getActiveDLPRules(orgId);
+  const inDlp = applyDLP(rules, message);
+  if (inDlp.blocked) {
+    const blockMsg =
+      "Your message appears to contain sensitive information and was blocked by your organization's policy.";
+    await insertAudit(orgId, userId, "DLP_BLOCK", "thread", threadId, message, {
+      rule: inDlp.triggered,
+      phase: "input",
+    });
+    const assistantId = await insertMessage({
+      orgId,
+      threadId,
+      role: "assistant",
+      content: blockMsg,
+      createdBy: userId,
+      provider: null,
+      modelId: null,
+    });
+    await insertAudit(
+      orgId,
+      userId,
+      "CHAT_POST",
+      "message",
+      assistantId,
+      blockMsg,
+      { reason: "dlp_block" }
+    );
+    return new Response(blockMsg, { status: 200 });
+  }
+
+  // Store user message (possibly redacted)
+  const storedUserText = inDlp.redactedText;
+  const userMsgId = await insertMessage({
+    orgId,
+    threadId,
+    role: "user",
+    content: storedUserText,
+    createdBy: userId,
+  });
+  await insertAudit(orgId, userId, "CHAT_POST", "message", userMsgId, storedUserText, {
+    role: "user",
+  });
+
+  // ADDED: Enforce tenant model policy BEFORE any provider call
+  const settings = await loadTenantSettings(orgId);
+  const policyKey = provider === "claude" ? "anthropic" : provider; // map UI "claude" → settings "anthropic"
+  if (!settings.modelEnabled[policyKey as keyof TenantSettings["modelEnabled"]]) {
+    const err = `Model '${provider}' is disabled by your admin.`;
+    // Audit the block
+    await insertAudit(orgId, userId, "MODEL_DISABLED", "thread", threadId, err, {
+      provider,
+    });
+    return new Response(JSON.stringify({ error: err }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Prepare stream to client
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    start: async (controller) => {
+      const startedAt = Date.now();
+      let assistantText = "";
+
+      // Decide defaults per provider
+      const finalModelId =
+        modelId ??
+        (provider === "openai"
+          ? DEFAULT_OPENAI_MODEL
+          : provider === "gemini"
+          ? DEFAULT_GEMINI_MODEL
+          : DEFAULT_CLAUDE_MODEL);
+
+      try {
+        // PROCESS FILE ATTACHMENTS: Load and integrate file content
+        let attachmentContext = "";
+        if (attachments && attachments.length > 0) {
+          console.log("🔍 FILE DEBUG - Processing attachments:", attachments);
+          
+          const { data: fileData, error: fileError } = await supabaseAdmin
+            .from("file_attachments")
+            .select("id, filename, mime_type, category, extracted_text, file_size")
+            .in("id", attachments)
+            .eq("org_id", orgId)
+            .eq("thread_id", threadId);
+
+          if (fileError) {
+            console.error("Failed to load file attachments:", fileError);
+          } else if (fileData && fileData.length > 0) {
+            console.log("🔍 FILE DEBUG - Loaded file data:", fileData.map(f => ({
+              filename: f.filename,
+              category: f.category,
+              hasText: !!f.extracted_text,
+              textLength: f.extracted_text?.length || 0
+            })));
+
+            // Build attachment context for AI
+            const attachmentSections = fileData.map(file => {
+              let section = `\n--- FILE: ${file.filename} (${file.category}) ---\n`;
+              
+              if (file.extracted_text) {
+                // Limit text length to prevent context overflow
+                const maxTextLength = 5000; // Adjust based on needs
+                const text = file.extracted_text.length > maxTextLength 
+                  ? file.extracted_text.substring(0, maxTextLength) + "\n[... content truncated ...]"
+                  : file.extracted_text;
+                section += text;
+              } else {
+                section += `[File uploaded but text extraction not available for ${file.mime_type}]`;
+              }
+              
+              section += `\n--- END FILE: ${file.filename} ---\n`;
+              return section;
+            });
+
+            attachmentContext = "\n\n=== ATTACHED FILES ===\n" + 
+              "The user has attached the following files to this conversation. Please reference them in your response as appropriate:\n" +
+              attachmentSections.join("\n") + 
+              "\n=== END ATTACHED FILES ===\n\n";
+
+            console.log("🔍 FILE DEBUG - Built attachment context length:", attachmentContext.length);
+          }
+        }
+
+        // HOT CONTEXT: Get context-enhanced prompt only if conversational mode is enabled
+        let contextResult;
+        if (conversationalMode) {
+          contextResult = await getContextEnhancedPrompt(threadId, storedUserText, {
+            maxContextMessages: 20, // Increased to find more conversations
+            minContextLength: 20,
+            forceContext: true, // Force context to always be included
+            provider: provider // Pass provider for context formatting
+          });
+        } else {
+          // No context when conversational mode is disabled
+          contextResult = {
+            enhancedPrompt: storedUserText,
+            contextUsed: [],
+            processingTimeMs: 0
+          };
+        }
+
+        // DEBUG: Log context retrieval results
+        console.log("🔍 CONTEXT DEBUG - Context result:", {
+          processingTimeMs: contextResult.processingTimeMs,
+          contextUsedCount: contextResult.contextUsed.length,
+          enhancedPromptLength: contextResult.enhancedPrompt.length,
+          originalMessageLength: storedUserText.length,
+          contextUsed: contextResult.contextUsed.map(c => ({
+            thread_title: c.thread_title,
+            message_role: c.message_role,
+            message_preview: c.message_content.substring(0, 100) + "..."
+          }))
+        });
+
+        // DEBUG: Log the FULL enhanced prompt being sent to Gemini
+        console.log("🔍 GEMINI DEBUG - Full enhanced prompt being sent:");
+        console.log("=" + "=".repeat(80));
+        console.log(contextResult.enhancedPrompt);
+        console.log("=" + "=".repeat(80));
+
+        // Record performance metrics
+        ContextPerformanceMonitor.recordRetrieval(
+          contextResult.processingTimeMs, 
+          contextResult.contextUsed.length
+        );
+
+        // Use the context-enhanced prompt for the AI, including file attachments
+        const finalUserMessage = contextResult.enhancedPrompt + attachmentContext;
+        
+        // DEBUG: Log if context was actually added
+        if (contextResult.enhancedPrompt !== storedUserText) {
+          console.log("🔍 CONTEXT DEBUG - Context was added to prompt");
+        } else {
+          console.log("🔍 CONTEXT DEBUG - No context added to prompt");
+        }
+        
+        if (attachmentContext) {
+          console.log("🔍 FILE DEBUG - File attachments added to context");
+        }
+
+        // Build system prompt
+        const sys =
+          `${systemPrompt}\n\n` +
+          (disclaimer ? `Disclaimer: ${disclaimer}` : "") +
+          (citations ? `\nCitations: Prefer citing sources when applicable.` : "");
+
+        // Load conversation history from database (excluding the current user message we just added)
+        const { data: messages, error: historyError } = await supabaseAdmin
+          .from("messages")
+          .select("role, content")
+          .eq("thread_id", threadId)
+          .eq("org_id", orgId)
+          .neq("id", userMsgId) // Exclude the message we just added
+          .order("created_at", { ascending: true });
+
+        if (historyError) {
+          console.error("Failed to load conversation history:", historyError);
+        }
+
+        // Build full conversation history
+        const history: { role: Role; content: string }[] = [
+          { role: "system", content: sys }
+        ];
+
+        // Add previous messages from the conversation
+        if (messages && messages.length > 0) {
+          for (const msg of messages) {
+            if (msg.role === "user" || msg.role === "assistant") {
+              history.push({
+                role: msg.role as Role,
+                content: msg.content
+              });
+            }
+          }
+        }
+
+        // Add the current context-enhanced user message
+        history.push({
+          role: "user",
+          content: finalUserMessage
+        });
+
+        if (provider === "openai") {
+          /**
+           * OpenAI streaming with fallback to Claude on error
+           */
+          try {
+            const resp = await openai.chat.completions.create({
+              model: finalModelId,
+              stream: true,
+              messages: mapHistoryForOpenAI(history),
+            });
+
+            for await (const chunk of resp) {
+              const delta = chunk.choices?.[0]?.delta?.content ?? "";
+              if (delta) {
+                assistantText += delta;
+                controller.enqueue(encoder.encode(delta));
+              }
+            }
+          } catch (err: any) {
+            const errMsg = String(err?.message ?? err);
+            await insertAudit(orgId, userId, "MODEL_FALLBACK", "thread", threadId, errMsg, {
+              from: "openai",
+              to: "claude",
+              error_status: err?.status ?? null,
+            });
+
+            const note = "[Note: OpenAI unavailable; falling back to Claude]";
+            assistantText += note + "\n";
+            controller.enqueue(encoder.encode(note + "\n"));
+
+            if (!anthropic) throw new Error("Both OpenAI and Claude unavailable");
+
+            const fallbackModel = DEFAULT_CLAUDE_MODEL;
+            const claudeHistory = mapHistoryForClaude(history);
+            
+            // Use the context-enhanced prompt in fallback too
+            const fallbackHistory = [...history];
+            if (fallbackHistory.length > 0 && fallbackHistory[fallbackHistory.length - 1].role === "user") {
+              fallbackHistory[fallbackHistory.length - 1].content = finalUserMessage;
+            }
+            
+            const stream = await anthropic.messages.stream({
+              model: fallbackModel,
+              system: sys,
+              max_tokens: 1024,
+              messages: mapHistoryForClaude(fallbackHistory),
+            });
+
+            stream.on("text", (t: string) => {
+              assistantText += t;
+              controller.enqueue(encoder.encode(t));
+            });
+
+            await stream.done();
+
+            (body as any)._effectiveProvider = "claude";
+            (body as any)._effectiveModelId = fallbackModel;
+          }
+        } else if (provider === "gemini") {
+          /**
+           * Gemini streaming with fallback to OpenAI on error
+           */
+          try {
+            if (!genAI) throw new Error("Gemini client unavailable");
+            
+            // For Gemini, we need to handle system prompt and context properly
+            const geminiHistory = mapHistoryForGemini(history);
+            let messageToSend = finalUserMessage; // This already contains the context-enhanced prompt
+            
+            // If this is the first message (no history), prepend system prompt
+            if (geminiHistory.length === 0) {
+              const systemContent = history.find(h => h.role === "system")?.content || "";
+              if (systemContent) {
+                messageToSend = `${systemContent}\n\n${finalUserMessage}`;
+              }
+            }
+            
+            const model = genAI.getGenerativeModel({ model: finalModelId });
+            
+            // Always use the context-enhanced message (finalUserMessage already contains context)
+            if (geminiHistory.length > 0) {
+              const chat = model.startChat({ history: geminiHistory });
+              const streaming = await chat.sendMessageStream([{ text: messageToSend }]);
+              
+              for await (const ch of streaming.stream) {
+                const part = ch.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+                if (part) {
+                  assistantText += part;
+                  controller.enqueue(encoder.encode(part));
+                }
+              }
+            } else {
+              // No history, use generateContentStream directly
+              const streaming = await model.generateContentStream([{ text: messageToSend }]);
+              
+              for await (const ch of streaming.stream) {
+                const part = ch.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+                if (part) {
+                  assistantText += part;
+                  controller.enqueue(encoder.encode(part));
+                }
+              }
+            }
+          } catch (err: any) {
+            const errMsg = String(err?.message ?? err);
+            
+            // DEBUG: Log detailed Gemini error
+            console.error("🚨 GEMINI ERROR - Full error object:", err);
+            console.error("🚨 GEMINI ERROR - Error message:", errMsg);
+            console.error("🚨 GEMINI ERROR - Error status:", err?.status);
+            console.error("🚨 GEMINI ERROR - Error code:", err?.code);
+            console.error("🚨 GEMINI ERROR - Error details:", err?.details);
+            console.error("🚨 GEMINI ERROR - Stack trace:", err?.stack);
+            
+            await insertAudit(orgId, userId, "MODEL_FALLBACK", "thread", threadId, errMsg, {
+              from: "gemini",
+              to: "openai",
+              error_status: err?.status ?? null,
+              error_code: err?.code ?? null,
+              error_details: err?.details ?? null,
+            });
+
+            const note = "[Note: Gemini unavailable; falling back to OpenAI]";
+            assistantText += note + "\n";
+            controller.enqueue(encoder.encode(note + "\n"));
+
+            const fallbackModel = DEFAULT_OPENAI_MODEL;
+            
+            // Use the context-enhanced prompt in fallback too
+            const fallbackHistory = [...history];
+            // Replace the last user message with the context-enhanced one
+            if (fallbackHistory.length > 0 && fallbackHistory[fallbackHistory.length - 1].role === "user") {
+              fallbackHistory[fallbackHistory.length - 1].content = finalUserMessage;
+            }
+            
+            const resp = await openai.chat.completions.create({
+              model: fallbackModel,
+              stream: true,
+              messages: mapHistoryForOpenAI(fallbackHistory),
+            });
+
+            for await (const chunk of resp) {
+              const delta = chunk.choices?.[0]?.delta?.content ?? "";
+              if (delta) {
+                assistantText += delta;
+                controller.enqueue(encoder.encode(delta));
+              }
+            }
+
+            (body as any)._effectiveProvider = "openai";
+            (body as any)._effectiveModelId = fallbackModel;
+          }
+        } else {
+          /**
+           * Claude streaming with fallback to OpenAI on error
+           */
+          try {
+            if (!anthropic) throw new Error("Claude client unavailable");
+            
+            // For Claude, we need to use the context-enhanced prompt properly
+            // Claude should get the same context-enhanced message as other providers
+            const claudeHistory = mapHistoryForClaude(history);
+            
+            // Replace the last user message with the context-enhanced one
+            if (claudeHistory.length > 0 && claudeHistory[claudeHistory.length - 1].role === "user") {
+              claudeHistory[claudeHistory.length - 1].content = finalUserMessage;
+            } else {
+              // If no history, add the context-enhanced message
+              claudeHistory.push({
+                role: "user",
+                content: finalUserMessage
+              });
+            }
+            
+            // DEBUG: Log what we're sending to Claude
+            console.log("🔍 CLAUDE DEBUG - Context-enhanced message:", finalUserMessage.substring(0, 200) + "...");
+            console.log("🔍 CLAUDE DEBUG - System prompt:", sys);
+            
+            // System prompt goes to "system"
+            const stream = await anthropic.messages.stream({
+              model: finalModelId,
+              system: sys,
+              max_tokens: 1024,
+              messages: claudeHistory,
+            });
+
+            stream.on("text", (t: string) => {
+              assistantText += t;
+              controller.enqueue(encoder.encode(t));
+            });
+
+            await stream.done();
+          } catch (err: any) {
+            const errMsg = String(err?.message ?? err);
+            await insertAudit(orgId, userId, "MODEL_FALLBACK", "thread", threadId, errMsg, {
+              from: "claude",
+              to: "openai",
+              error_status: err?.status ?? null,
+            });
+
+            const note = "[Note: Claude unavailable; falling back to OpenAI]";
+            assistantText += note + "\n";
+            controller.enqueue(encoder.encode(note + "\n"));
+
+            const fallbackModel = DEFAULT_OPENAI_MODEL;
+            
+            // Use the context-enhanced prompt in fallback too
+            const fallbackHistory = [...history];
+            // Replace the last user message with the context-enhanced one
+            if (fallbackHistory.length > 0 && fallbackHistory[fallbackHistory.length - 1].role === "user") {
+              fallbackHistory[fallbackHistory.length - 1].content = finalUserMessage;
+            }
+            
+            const resp = await openai.chat.completions.create({
+              model: fallbackModel,
+              stream: true,
+              messages: mapHistoryForOpenAI(fallbackHistory),
+            });
+
+            for await (const chunk of resp) {
+              const delta = chunk.choices?.[0]?.delta?.content ?? "";
+              if (delta) {
+                assistantText += delta;
+                controller.enqueue(encoder.encode(delta));
+              }
+            }
+
+            (body as any)._effectiveProvider = "openai";
+            (body as any)._effectiveModelId = fallbackModel;
+          }
+        }
+
+        // DLP on OUTPUT: redact (do not block entire response on output)
+        const outDlp = applyDLP(rules, assistantText);
+        const finalAssistant = outDlp.blocked
+          ? "Response contained sensitive data and was blocked."
+          : outDlp.redactedText;
+
+        // Close stream
+        controller.close();
+
+        // Persist assistant message + audit + invocation
+        const effectiveProvider = (body as any)._effectiveProvider ?? provider;
+        const effectiveModelId =
+          (body as any)._effectiveModelId ?? finalModelId;
+
+        const assistantId = await insertMessage({
+          orgId,
+          threadId,
+          role: "assistant",
+          content: finalAssistant,
+          createdBy: userId,
+          provider: effectiveProvider as Provider,
+          modelId: effectiveModelId,
+        });
+        await insertAudit(
+          orgId,
+          userId,
+          "CHAT_POST",
+          "message",
+          assistantId,
+          finalAssistant,
+          { role: "assistant", provider: effectiveProvider, modelId: effectiveModelId }
+        );
+
+        const latency = Date.now() - startedAt;
+        await insertInvocation({
+          orgId,
+          threadId,
+          messageId: assistantId,
+          provider: effectiveProvider as Provider,
+          modelId: effectiveModelId,
+          latencyMs: latency,
+        });
+      } catch (e: any) {
+        console.error("orchestrator error", e);
+        const msg = "Sorry, something went wrong generating a response.";
+        controller.enqueue(encoder.encode(msg));
+        controller.close();
+        await insertAudit(orgId, userId, "ERROR", "thread", threadId, msg, {
+          error: String(e?.message ?? e),
+        });
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Transfer-Encoding": "chunked",
+      "Cache-Control": "no-cache",
+    },
+  });
+}
+

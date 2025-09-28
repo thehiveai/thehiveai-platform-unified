@@ -1,0 +1,451 @@
+import { supabaseAdmin } from "./supabaseAdmin";
+import OpenAI from "openai";
+
+// Initialize OpenAI client for embeddings and entity extraction
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) {
+    throw new Error("OPENAI_API_KEY missing");
+  }
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: key });
+  }
+  return _openai;
+}
+
+export interface ContextItem {
+  id: string;
+  content: string;
+  similarity?: number;
+  metadata: any;
+  thread_id?: string;
+  message_id?: string;
+  created_at: string;
+}
+
+export interface EntityExtraction {
+  type: string;
+  value: string;
+  confidence: number;
+  context_snippet: string;
+}
+
+export interface ContextSummary {
+  summary_text: string;
+  key_points: string[];
+  entities_mentioned: string[];
+  confidence_score: number;
+}
+
+// Generate embeddings for text content
+export async function generateEmbedding(text: string): Promise<number[]> {
+  try {
+    const response = await getOpenAI().embeddings.create({
+      model: "text-embedding-3-small",
+      input: text.substring(0, 8000), // Limit input length
+    });
+
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error("Failed to generate embedding:", error);
+    throw new Error("Embedding generation failed");
+  }
+}
+
+// Extract entities from text using OpenAI
+export async function extractEntities(
+  text: string,
+  orgId: string
+): Promise<EntityExtraction[]> {
+  try {
+    const prompt = `Extract important entities from this legal/business conversation. Focus on:
+- People (names, roles)
+- Companies/Organizations
+- Legal matter numbers (format: XXXX-XXX or similar)
+- Dates and deadlines
+- Legal concepts and terms
+- Locations
+- Financial amounts
+
+Text: "${text}"
+
+Return a JSON array of entities with this format:
+[{"type": "person", "value": "John Smith", "confidence": 0.95, "context_snippet": "John Smith mentioned the contract"}]
+
+Types should be: person, company, matter_number, date, legal_concept, location, financial, other`;
+
+    const response = await getOpenAI().chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.1,
+      max_tokens: 1000,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) return [];
+
+    try {
+      const entities = JSON.parse(content);
+      return Array.isArray(entities) ? entities : [];
+    } catch (parseError) {
+      console.error("Failed to parse entity extraction response:", parseError);
+      return [];
+    }
+  } catch (error) {
+    console.error("Entity extraction failed:", error);
+    return [];
+  }
+}
+
+// Generate summary for a thread or conversation
+export async function generateSummary(
+  messages: string[],
+  summaryType: "thread" | "topic" | "entity" | "time_period" = "thread"
+): Promise<ContextSummary> {
+  try {
+    const combinedText = messages.join("\n\n");
+    const prompt = `Analyze this ${summaryType} conversation and provide a comprehensive summary.
+
+Conversation:
+${combinedText.substring(0, 6000)}
+
+Provide a JSON response with:
+{
+  "summary_text": "Brief but comprehensive summary",
+  "key_points": ["point 1", "point 2", "point 3"],
+  "entities_mentioned": ["entity1", "entity2", "entity3"],
+  "confidence_score": 0.85
+}
+
+Focus on legal/business context, important decisions, action items, and key relationships.`;
+
+    const response = await getOpenAI().chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      max_tokens: 800,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      return {
+        summary_text: "Summary generation failed",
+        key_points: [],
+        entities_mentioned: [],
+        confidence_score: 0.0,
+      };
+    }
+
+    try {
+      const summary = JSON.parse(content);
+      return {
+        summary_text: summary.summary_text || "No summary available",
+        key_points: Array.isArray(summary.key_points) ? summary.key_points : [],
+        entities_mentioned: Array.isArray(summary.entities_mentioned) 
+          ? summary.entities_mentioned : [],
+        confidence_score: typeof summary.confidence_score === 'number' 
+          ? summary.confidence_score : 0.5,
+      };
+    } catch (parseError) {
+      console.error("Failed to parse summary response:", parseError);
+      return {
+        summary_text: content.substring(0, 500),
+        key_points: [],
+        entities_mentioned: [],
+        confidence_score: 0.3,
+      };
+    }
+  } catch (error) {
+    console.error("Summary generation failed:", error);
+    return {
+      summary_text: "Summary generation failed",
+      key_points: [],
+      entities_mentioned: [],
+      confidence_score: 0.0,
+    };
+  }
+}
+
+// Store context embedding in database
+export async function storeContextEmbedding({
+  orgId,
+  threadId,
+  messageId,
+  contentType,
+  contentText,
+  embedding,
+  metadata = {}
+}: {
+  orgId: string;
+  threadId?: string;
+  messageId?: string;
+  contentType: "message" | "document" | "summary";
+  contentText: string;
+  embedding: number[];
+  metadata?: any;
+}): Promise<string> {
+  const { data, error } = await supabaseAdmin
+    .from("context_embeddings")
+    .insert({
+      org_id: orgId,
+      thread_id: threadId,
+      message_id: messageId,
+      content_type: contentType,
+      content_text: contentText,
+      embedding: `[${embedding.join(",")}]`,
+      metadata: {
+        ...metadata,
+        embedding_model: "text-embedding-3-small",
+        processed_at: new Date().toISOString(),
+      },
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to store context embedding: ${error.message}`);
+  }
+
+  return data.id;
+}
+
+// Store extracted entities in database
+export async function storeEntities({
+  orgId,
+  threadId,
+  messageId,
+  entities
+}: {
+  orgId: string;
+  threadId?: string;
+  messageId?: string;
+  entities: EntityExtraction[];
+}): Promise<string[]> {
+  if (entities.length === 0) return [];
+
+  const entityRecords = entities.map(entity => ({
+    org_id: orgId,
+    thread_id: threadId,
+    message_id: messageId,
+    entity_type: entity.type,
+    entity_value: entity.value,
+    confidence_score: entity.confidence,
+    context_snippet: entity.context_snippet,
+    metadata: {
+      extracted_at: new Date().toISOString(),
+      extraction_model: "gpt-3.5-turbo",
+    },
+  }));
+
+  const { data, error } = await supabaseAdmin
+    .from("context_entities")
+    .insert(entityRecords)
+    .select("id");
+
+  if (error) {
+    throw new Error(`Failed to store entities: ${error.message}`);
+  }
+
+  return data.map(record => record.id);
+}
+
+// Retrieve relevant context for a query
+export async function getRelevantContext({
+  orgId,
+  query,
+  threadId,
+  limit = 10,
+  similarityThreshold = 0.7
+}: {
+  orgId: string;
+  query: string;
+  threadId?: string;
+  limit?: number;
+  similarityThreshold?: number;
+}): Promise<ContextItem[]> {
+  try {
+    // Generate embedding for the query
+    const queryEmbedding = await generateEmbedding(query);
+
+    // Search for similar context
+    const { data: contextResults, error } = await supabaseAdmin
+      .rpc("search_context_embeddings", {
+        p_org_id: orgId,
+        p_query_embedding: `[${queryEmbedding.join(",")}]`,
+        p_limit: limit,
+        p_similarity_threshold: similarityThreshold,
+      });
+
+    if (error) {
+      throw new Error(`Context search failed: ${error.message}`);
+    }
+
+    // Log context usage
+    if (contextResults && contextResults.length > 0) {
+      await logContextUsage({
+        orgId,
+        threadId,
+        contextType: "embedding",
+        contextIds: contextResults.map((r: any) => r.id),
+        usageType: "retrieval",
+        relevanceScores: contextResults.map((r: any) => r.similarity),
+      });
+    }
+
+    return contextResults || [];
+  } catch (error) {
+    console.error("Failed to get relevant context:", error);
+    return [];
+  }
+}
+
+// Get thread-specific context
+export async function getThreadContext({
+  orgId,
+  threadId,
+  limit = 50
+}: {
+  orgId: string;
+  threadId: string;
+  limit?: number;
+}): Promise<ContextItem[]> {
+  try {
+    const { data: threadContext, error } = await supabaseAdmin
+      .rpc("get_thread_context", {
+        p_org_id: orgId,
+        p_thread_id: threadId,
+        p_limit: limit,
+      });
+
+    if (error) {
+      throw new Error(`Thread context retrieval failed: ${error.message}`);
+    }
+
+    return threadContext || [];
+  } catch (error) {
+    console.error("Failed to get thread context:", error);
+    return [];
+  }
+}
+
+// Process a message for context indexing
+export async function processMessageForContext({
+  orgId,
+  threadId,
+  messageId,
+  content,
+  metadata = {}
+}: {
+  orgId: string;
+  threadId?: string;
+  messageId?: string;
+  content: string;
+  metadata?: any;
+}): Promise<{
+  embeddingId: string;
+  entityIds: string[];
+  entities: EntityExtraction[];
+}> {
+  try {
+    // Generate embedding
+    const embedding = await generateEmbedding(content);
+
+    // Store embedding
+    const embeddingId = await storeContextEmbedding({
+      orgId,
+      threadId,
+      messageId,
+      contentType: "message",
+      contentText: content,
+      embedding,
+      metadata,
+    });
+
+    // Extract entities
+    const entities = await extractEntities(content, orgId);
+
+    // Store entities
+    const entityIds = await storeEntities({
+      orgId,
+      threadId,
+      messageId,
+      entities,
+    });
+
+    return {
+      embeddingId,
+      entityIds,
+      entities,
+    };
+  } catch (error) {
+    console.error("Failed to process message for context:", error);
+    throw error;
+  }
+}
+
+// Log context usage for audit and optimization
+async function logContextUsage({
+  orgId,
+  threadId,
+  messageId,
+  contextType,
+  contextIds,
+  usageType,
+  relevanceScores
+}: {
+  orgId: string;
+  threadId?: string;
+  messageId?: string;
+  contextType: string;
+  contextIds: string[];
+  usageType: string;
+  relevanceScores?: number[];
+}) {
+  try {
+    await supabaseAdmin
+      .from("context_usage")
+      .insert({
+        org_id: orgId,
+        thread_id: threadId,
+        message_id: messageId,
+        context_type: contextType,
+        context_ids: contextIds,
+        usage_type: usageType,
+        relevance_scores: relevanceScores || [],
+      });
+  } catch (error) {
+    console.error("Failed to log context usage:", error);
+    // Don't throw - this is non-critical
+  }
+}
+
+// Inject context into AI model prompts
+export function injectContextIntoPrompt(
+  originalPrompt: string,
+  contextItems: ContextItem[],
+  maxContextLength = 2000
+): string {
+  if (contextItems.length === 0) return originalPrompt;
+
+  // Sort by relevance/recency
+  const sortedContext = contextItems
+    .sort((a, b) => (b.similarity || 0) - (a.similarity || 0))
+    .slice(0, 10); // Limit to top 10 items
+
+  // Build context string
+  let contextString = "## Relevant Context:\n";
+  let currentLength = 0;
+
+  for (const item of sortedContext) {
+    const contextLine = `- ${item.content}\n`;
+    if (currentLength + contextLine.length > maxContextLength) break;
+    
+    contextString += contextLine;
+    currentLength += contextLine.length;
+  }
+
+  // Inject context before the original prompt
+  return `${contextString}\n## Current Query:\n${originalPrompt}`;
+}
+

@@ -1,0 +1,397 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { ensureUser, resolveOrgId, assertMembership } from "@/lib/membership";
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { orgId: string } }
+) {
+  try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = await ensureUser(session);
+    const userOrgId = await resolveOrgId(userId);
+    
+    // Verify user belongs to the requested org
+    if (userOrgId !== params.orgId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    await assertMembership(params.orgId, userId);
+
+    // Parse query parameters
+    const { searchParams } = new URL(req.url);
+    const start = searchParams.get("start") || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const end = searchParams.get("end") || new Date().toISOString();
+    const includeModels = searchParams.get("includeModels") === "true";
+    const includeUsers = searchParams.get("includeUsers") === "true";
+    const includeDaily = searchParams.get("includeDaily") === "true";
+
+    // Basic usage stats
+    const statsQuery = `
+      SELECT 
+        COUNT(DISTINCT m.id) as total_messages,
+        COUNT(DISTINCT m.thread_id) as total_threads,
+        COUNT(DISTINCT m.created_by) as total_users,
+        COALESCE(SUM(m.input_tokens + m.output_tokens), 0) as total_tokens,
+        COALESCE(SUM(inv.cost_usd), 0) as total_cost
+      FROM messages m
+      LEFT JOIN model_invocations inv ON inv.message_id = m.id
+      WHERE m.org_id = $1 
+        AND m.created_at >= $2 
+        AND m.created_at <= $3
+    `;
+
+    const { data: statsData, error: statsError } = await supabaseAdmin
+      .rpc('execute_sql', {
+        query: statsQuery,
+        params: [params.orgId, start, end]
+      });
+
+    if (statsError) {
+      console.error("Stats query error:", statsError);
+      // Fallback to direct table queries
+      const { data: messages, error: msgError } = await supabaseAdmin
+        .from("messages")
+        .select("id, thread_id, created_by, input_tokens, output_tokens")
+        .eq("org_id", params.orgId)
+        .gte("created_at", start)
+        .lte("created_at", end);
+
+      if (msgError) throw msgError;
+
+      const { data: invocations, error: invError } = await supabaseAdmin
+        .from("model_invocations")
+        .select("cost_usd")
+        .eq("org_id", params.orgId)
+        .gte("created_at", start)
+        .lte("created_at", end);
+
+      const stats = {
+        totalMessages: messages?.length || 0,
+        totalThreads: new Set(messages?.map(m => m.thread_id)).size || 0,
+        totalUsers: new Set(messages?.map(m => m.created_by)).size || 0,
+        totalTokens: messages?.reduce((sum, m) => sum + (m.input_tokens || 0) + (m.output_tokens || 0), 0) || 0,
+        totalCost: invocations?.reduce((sum, inv) => sum + (inv.cost_usd || 0), 0) || 0,
+        periodStart: start,
+        periodEnd: end
+      };
+
+      const result: any = { stats };
+
+      // Model usage breakdown
+      if (includeModels) {
+        const { data: modelData, error: modelError } = await supabaseAdmin
+          .from("model_invocations")
+          .select(`
+            provider,
+            model_id,
+            latency_ms,
+            input_tokens,
+            output_tokens,
+            cost_usd,
+            messages!inner(created_at)
+          `)
+          .eq("org_id", params.orgId)
+          .gte("messages.created_at", start)
+          .lte("messages.created_at", end);
+
+        if (!modelError && modelData) {
+          const modelUsage = modelData.reduce((acc: any[], inv: any) => {
+            const key = `${inv.provider}-${inv.model_id}`;
+            const existing = acc.find(m => `${m.provider}-${m.model}` === key);
+            
+            if (existing) {
+              existing.messageCount += 1;
+              existing.tokenCount += (inv.input_tokens || 0) + (inv.output_tokens || 0);
+              existing.totalLatency += inv.latency_ms || 0;
+              existing.cost += inv.cost_usd || 0;
+            } else {
+              acc.push({
+                provider: inv.provider,
+                model: inv.model_id,
+                messageCount: 1,
+                tokenCount: (inv.input_tokens || 0) + (inv.output_tokens || 0),
+                totalLatency: inv.latency_ms || 0,
+                avgLatency: inv.latency_ms || 0,
+                cost: inv.cost_usd || 0
+              });
+            }
+            return acc;
+          }, []);
+
+          // Calculate average latency
+          modelUsage.forEach(model => {
+            model.avgLatency = model.messageCount > 0 ? model.totalLatency / model.messageCount : 0;
+            delete model.totalLatency;
+          });
+
+          result.modelUsage = modelUsage.sort((a, b) => b.messageCount - a.messageCount);
+        }
+      }
+
+      // User activity breakdown
+      if (includeUsers) {
+        const { data: userData, error: userError } = await supabaseAdmin
+          .from("messages")
+          .select(`
+            created_by,
+            thread_id,
+            input_tokens,
+            output_tokens,
+            created_at,
+            users!inner(email, name)
+          `)
+          .eq("org_id", params.orgId)
+          .gte("created_at", start)
+          .lte("created_at", end);
+
+        if (!userError && userData) {
+          const userActivity = userData.reduce((acc: any[], msg: any) => {
+            const existing = acc.find(u => u.userId === msg.created_by);
+            
+            if (existing) {
+              existing.messageCount += 1;
+              existing.totalTokens += (msg.input_tokens || 0) + (msg.output_tokens || 0);
+              existing.threadIds.add(msg.thread_id);
+              if (new Date(msg.created_at) > new Date(existing.lastActive)) {
+                existing.lastActive = msg.created_at;
+              }
+            } else {
+              acc.push({
+                userId: msg.created_by,
+                userEmail: msg.users?.email || "Unknown",
+                userName: msg.users?.name || null,
+                messageCount: 1,
+                threadIds: new Set([msg.thread_id]),
+                totalTokens: (msg.input_tokens || 0) + (msg.output_tokens || 0),
+                lastActive: msg.created_at
+              });
+            }
+            return acc;
+          }, []);
+
+          // Convert Set to count and remove it
+          userActivity.forEach(user => {
+            user.threadCount = user.threadIds.size;
+            delete user.threadIds;
+          });
+
+          result.userActivity = userActivity.sort((a, b) => b.messageCount - a.messageCount);
+        }
+      }
+
+      // Daily usage trend
+      if (includeDaily) {
+        const { data: dailyData, error: dailyError } = await supabaseAdmin
+          .from("messages")
+          .select(`
+            created_at,
+            input_tokens,
+            output_tokens,
+            model_invocations(cost_usd)
+          `)
+          .eq("org_id", params.orgId)
+          .gte("created_at", start)
+          .lte("created_at", end)
+          .order("created_at", { ascending: true });
+
+        if (!dailyError && dailyData) {
+          const dailyUsage = dailyData.reduce((acc: any[], msg: any) => {
+            const date = new Date(msg.created_at).toISOString().split('T')[0];
+            const existing = acc.find(d => d.date === date);
+            
+            if (existing) {
+              existing.messageCount += 1;
+              existing.tokenCount += (msg.input_tokens || 0) + (msg.output_tokens || 0);
+              existing.cost += msg.model_invocations?.reduce((sum: number, inv: any) => sum + (inv.cost_usd || 0), 0) || 0;
+            } else {
+              acc.push({
+                date,
+                messageCount: 1,
+                tokenCount: (msg.input_tokens || 0) + (msg.output_tokens || 0),
+                cost: msg.model_invocations?.reduce((sum: number, inv: any) => sum + (inv.cost_usd || 0), 0) || 0
+              });
+            }
+            return acc;
+          }, []);
+
+          result.dailyUsage = dailyUsage.sort((a, b) => a.date.localeCompare(b.date));
+        }
+      }
+
+      return NextResponse.json(result);
+    }
+
+    // If we have RPC support, use the more efficient query
+    const stats = statsData?.[0] || {
+      total_messages: 0,
+      total_threads: 0,
+      total_users: 0,
+      total_tokens: 0,
+      total_cost: 0
+    };
+
+    const result: any = {
+      stats: {
+        totalMessages: parseInt(stats.total_messages) || 0,
+        totalThreads: parseInt(stats.total_threads) || 0,
+        totalUsers: parseInt(stats.total_users) || 0,
+        totalTokens: parseInt(stats.total_tokens) || 0,
+        totalCost: parseFloat(stats.total_cost) || 0,
+        periodStart: start,
+        periodEnd: end
+      }
+    };
+
+    // Add detailed breakdowns if requested
+    if (includeModels) {
+      const { data: modelData, error: modelError } = await supabaseAdmin
+        .from("model_invocations")
+        .select("provider, model_id, latency_ms, input_tokens, output_tokens, cost_usd")
+        .eq("org_id", params.orgId)
+        .gte("created_at", start)
+        .lte("created_at", end);
+
+      if (!modelError && modelData) {
+        const modelUsage = modelData.reduce((acc: any[], inv: any) => {
+          const key = `${inv.provider}-${inv.model_id}`;
+          const existing = acc.find(m => `${m.provider}-${m.model}` === key);
+          
+          if (existing) {
+            existing.messageCount += 1;
+            existing.tokenCount += (inv.input_tokens || 0) + (inv.output_tokens || 0);
+            existing.totalLatency += inv.latency_ms || 0;
+            existing.cost += inv.cost_usd || 0;
+          } else {
+            acc.push({
+              provider: inv.provider,
+              model: inv.model_id,
+              messageCount: 1,
+              tokenCount: (inv.input_tokens || 0) + (inv.output_tokens || 0),
+              totalLatency: inv.latency_ms || 0,
+              cost: inv.cost_usd || 0
+            });
+          }
+          return acc;
+        }, []);
+
+        // Calculate average latency
+        modelUsage.forEach(model => {
+          model.avgLatency = model.messageCount > 0 ? model.totalLatency / model.messageCount : 0;
+          delete model.totalLatency;
+        });
+
+        result.modelUsage = modelUsage.sort((a, b) => b.messageCount - a.messageCount);
+      }
+    }
+
+    if (includeUsers) {
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from("messages")
+        .select(`
+          created_by,
+          thread_id,
+          input_tokens,
+          output_tokens,
+          created_at,
+          users!inner(email, name)
+        `)
+        .eq("org_id", params.orgId)
+        .gte("created_at", start)
+        .lte("created_at", end);
+
+      if (!userError && userData) {
+        const userActivity = userData.reduce((acc: any[], msg: any) => {
+          const existing = acc.find(u => u.userId === msg.created_by);
+          
+          if (existing) {
+            existing.messageCount += 1;
+            existing.totalTokens += (msg.input_tokens || 0) + (msg.output_tokens || 0);
+            existing.threadIds.add(msg.thread_id);
+            if (new Date(msg.created_at) > new Date(existing.lastActive)) {
+              existing.lastActive = msg.created_at;
+            }
+          } else {
+            acc.push({
+              userId: msg.created_by,
+              userEmail: msg.users?.email || "Unknown",
+              userName: msg.users?.name || null,
+              messageCount: 1,
+              threadIds: new Set([msg.thread_id]),
+              totalTokens: (msg.input_tokens || 0) + (msg.output_tokens || 0),
+              lastActive: msg.created_at
+            });
+          }
+          return acc;
+        }, []);
+
+        // Convert Set to count
+        userActivity.forEach(user => {
+          user.threadCount = user.threadIds.size;
+          delete user.threadIds;
+        });
+
+        result.userActivity = userActivity.sort((a, b) => b.messageCount - a.messageCount);
+      }
+    }
+
+    if (includeDaily) {
+      const { data: dailyData, error: dailyError } = await supabaseAdmin
+        .from("messages")
+        .select(`
+          created_at,
+          input_tokens,
+          output_tokens,
+          model_invocations(cost_usd)
+        `)
+        .eq("org_id", params.orgId)
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .order("created_at", { ascending: true });
+
+      if (!dailyError && dailyData) {
+        const dailyUsage = dailyData.reduce((acc: any[], msg: any) => {
+          const date = new Date(msg.created_at).toISOString().split('T')[0];
+          const existing = acc.find(d => d.date === date);
+          
+          const cost = Array.isArray(msg.model_invocations) 
+            ? msg.model_invocations.reduce((sum: number, inv: any) => sum + (inv.cost_usd || 0), 0)
+            : (msg.model_invocations?.cost_usd || 0);
+          
+          if (existing) {
+            existing.messageCount += 1;
+            existing.tokenCount += (msg.input_tokens || 0) + (msg.output_tokens || 0);
+            existing.cost += cost;
+          } else {
+            acc.push({
+              date,
+              messageCount: 1,
+              tokenCount: (msg.input_tokens || 0) + (msg.output_tokens || 0),
+              cost
+            });
+          }
+          return acc;
+        }, []);
+
+        result.dailyUsage = dailyUsage.sort((a, b) => a.date.localeCompare(b.date));
+      }
+    }
+
+    return NextResponse.json(result);
+
+  } catch (error: any) {
+    console.error("Analytics API error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+

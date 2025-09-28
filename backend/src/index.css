@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 12 10% 4%;
+    --foreground: 45 100% 85%;
+
+    --card: 12 15% 8%;
+    --card-foreground: 45 100% 85%;
+
+    --popover: 12 15% 8%;
+    --popover-foreground: 45 100% 85%;
+
+    --primary: 38 92% 50%;
+    --primary-foreground: 12 10% 4%;
+
+    --secondary: 12 20% 12%;
+    --secondary-foreground: 45 100% 85%;
+
+    --muted: 12 20% 12%;
+    --muted-foreground: 45 30% 60%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 12 10% 4%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 45 100% 85%;
+
+    --border: 38 92% 50% / 0.2;
+    --input: 12 20% 12%;
+    --ring: 38 92% 50%;
+
+    /* Hive AI Platform Design Tokens - Matching store.gohive.ai */
+    --gradient-primary: linear-gradient(135deg, hsl(38 92% 50%), hsl(45 100% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(12 10% 4%), hsl(12 20% 12%));
+    --gradient-hero: linear-gradient(135deg, hsl(38 92% 50% / 0.1), hsl(45 100% 60% / 0.1));
+    --gradient-hive: linear-gradient(135deg, rgba(255, 165, 0, 0.1), rgba(255, 184, 0, 0.05));
+    
+    --shadow-glow: 0 0 40px hsl(38 92% 50% / 0.4);
+    --shadow-card: 0 10px 30px -10px hsl(0 0% 0% / 0.5);
+    --shadow-hive: 0 8px 32px hsl(38 92% 50% / 0.15);
+    
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    --hive-amber: 38 92% 50%;
+    --hive-gold: 45 100% 60%;
+    --hive-dark: 12 10% 4%;
+    --hive-surface: 12 15% 8%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background-image: url('/honeycomb-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+}

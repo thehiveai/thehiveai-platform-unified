@@ -22,3 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Frontend/Backend build & env
+node_modules/
+dist/
+.vite/
+.next/
+out/
+.cache/
+.eslintcache
+coverage/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+supabase/.temp/
+# Backups & secrets (blocked by push protection)
+backend/ops/backups/
+*.bak
+*.backup.json

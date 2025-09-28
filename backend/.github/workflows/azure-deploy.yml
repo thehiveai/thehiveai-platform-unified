@@ -1,0 +1,83 @@
+name: Deploy Web App (Prod)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable Corepack (pnpm)
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.17.1 --activate
+          pnpm -v
+
+      - name: Install deps
+        shell: pwsh
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (Next.js)
+        shell: pwsh
+        env:
+          # Build-time envs (from GitHub Secrets)
+          NEXTAUTH_URL:              ${{ secrets.NEXTAUTH_URL }}
+          APP_BASE_URL:              ${{ secrets.APP_BASE_URL }}
+          PUBLIC_SITE_URL:           ${{ secrets.PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_ENABLE_GEMINI: ${{ secrets.NEXT_PUBLIC_ENABLE_GEMINI }}
+          NEXT_PUBLIC_ENABLE_CLAUDE: ${{ secrets.NEXT_PUBLIC_ENABLE_CLAUDE }}
+          OPENAI_API_KEY:            ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
+          AZURE_OPENAI_API_KEY:      ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT:     ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_VERSION:  ${{ secrets.AZURE_OPENAI_API_VERSION }}
+          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE:     ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          CRON_TOKEN:                ${{ secrets.CRON_TOKEN }}
+          AZURE_AD_TENANT_ID:        ${{ secrets.AZURE_AD_TENANT_ID }}
+          RESEND_API_KEY:            ${{ secrets.RESEND_API_KEY }}
+          N8N_WEBHOOK_TOKEN:         ${{ secrets.N8N_WEBHOOK_TOKEN }}
+          RUN_ALL_URL:               ${{ secrets.RUN_ALL_URL }}
+          NEXTAUTH_SECRET:           ${{ secrets.NEXTAUTH_SECRET }}
+        run: pnpm build
+
+      - name: Create Next.js release
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force release -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory release -Force | Out-Null
+          # Copy all necessary files for Next.js deployment
+          Copy-Item -Recurse -Force ".next" "release/.next"
+          Copy-Item -Recurse -Force "node_modules" "release/node_modules"
+          Copy-Item -Recurse -Force "src" "release/src"
+          Copy-Item "package.json" "release/package.json" -Force
+          Copy-Item "server.js" "release/server.js" -Force
+          # Public folder (if present)
+          if (Test-Path "public") { Copy-Item -Recurse -Force "public" "release/public" }
+          # Next config and other config files
+          if (Test-Path "next.config.js") { Copy-Item "next.config.js" "release/next.config.js" -Force }
+          if (Test-Path "next.config.mjs") { Copy-Item "next.config.mjs" "release/next.config.mjs" -Force }
+          if (Test-Path "tailwind.config.ts") { Copy-Item "tailwind.config.ts" "release/tailwind.config.ts" -Force }
+          if (Test-Path "postcss.config.js") { Copy-Item "postcss.config.js" "release/postcss.config.js" -Force }
+          if (Test-Path "tsconfig.json") { Copy-Item "tsconfig.json" "release/tsconfig.json" -Force }
+
+      - name: Deploy to Azure Web App (Prod)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: hive-ai-production
+          slot-name: production
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: release
