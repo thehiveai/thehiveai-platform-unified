@@ -82,5 +82,6 @@
     "build": "vite build",
     "typecheck:frontend": "tsc --noEmit -p tsconfig.smoke.frontend.json",
     "typecheck:backend": "cd backend && tsc --noEmit -p tsconfig.smoke.json"
-  }
+  },
+  "engines": {}
 }
