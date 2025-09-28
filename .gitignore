@@ -41,3 +41,7 @@ supabase/.temp/
 backend/ops/backups/
 *.bak
 *.backup.json
+
+# Allow VS Code tasks.json in repo
+!.vscode/
+!.vscode/tasks.json

@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Frontend: Vite (8080)", "type": "shell", "command": "npm run dev -- --port 8080", "options": { "cwd": "${workspaceFolder}" } },
+    { "label": "Backend: Next (3000)",  "type": "shell", "command": "npm run dev",                "options": { "cwd": "${workspaceFolder}/backend" } },
+    { "label": "Typecheck: Frontend",    "type": "shell", "command": "npm run typecheck:frontend", "options": { "cwd": "${workspaceFolder}" } },
+    { "label": "Typecheck: Backend",     "type": "shell", "command": "npm run typecheck:backend",  "options": { "cwd": "${workspaceFolder}" } },
+    { "label": "Dev: Frontend+Backend",  "dependsOn": ["Frontend: Vite (8080)", "Backend: Next (3000)"], "dependsOrder": "parallel" }
+  ]
+}
