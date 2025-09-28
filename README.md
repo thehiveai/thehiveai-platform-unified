@@ -1,73 +1,74 @@
-# Welcome to your Lovable project
+# The Hive AI Platform — Unified Repo
 
-## Project info
+> Lovable frontend at **root** (Vite). Next.js backend in **/backend**. Shared code in **/shared**. Supabase config in **/supabase**.
 
-**URL**: https://lovable.dev/projects/b1837934-f10f-455d-92da-462ee88516a9
+## Structure
 
-## How can I edit this code?
+├─ src/ # Frontend (Lovable)
+├─ public/ # Frontend public assets
+├─ index.html
+├─ vite.config.ts
+├─ tailwind.config.ts
+├─ backend/ # Next.js backend (VS Code)
+│ ├─ src/app/api/... # API routes (e.g., /api/healthz, /api/supa-ping)
+│ ├─ next.config.mjs
+│ ├─ package.json
+│ └─ tsconfig.json
+├─ shared/ # Shared types/utils
+│ ├─ types/hive.ts
+│ └─ utils/math.ts
+├─ supabase/ # Supabase project (config.toml, functions/, migrations/)
+├─ .env # Local dev env (Vite reads VITE_* vars)
+├─ .env.local # Optional backend env
+└─ .github/workflows/ci-typecheck.yml
 
-There are several ways of editing your application.
+## Local Dev (Windows)
+- Frontend (Vite): **http://localhost:8080**
+- Backend (Next.js): **http://localhost:3000**
 
-**Use Lovable**
+### One-time
+- Node **20.x**, npm
+- In **.env** (root): `VITE_API_BASE_URL=http://localhost:3000`
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b1837934-f10f-455d-92da-462ee88516a9) and start prompting.
+### Start both (VS Code)
+- **Terminal → Run Task → “Dev: Frontend + Backend”**
+- Or run manually:
+```powershell
+# Frontend
+npm run dev -- --port 8080 --host 0.0.0.0
 
-Changes made via Lovable will be committed automatically to this repo.
+# Backend
+cd backend
+npm run dev -- -p 3000
+Quick health checks
 
-**Use your preferred IDE**
+Browser: 
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+GET http://localhost:3000/api/healthz
+GET http://localhost:3000/api/supa-ping
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Frontend console should show:
 
-Follow these steps:
+frontend->backend OK: …
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+supa OK: …
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Type Safety
+npm run typecheck:frontend
+npm run typecheck:backend
 
-# Step 3: Install the necessary dependencies.
-npm i
+Path Aliases
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+Frontend: @shared/* → shared/*
 
-**Edit a file directly in GitHub**
+Backend: @shared/* → ../shared/*
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+CORS (dev)
 
-**Use GitHub Codespaces**
+Backend allows origin http://localhost:8080.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Notes
 
-## What technologies are used for this project?
+Keep secrets out of git; use .env / .env.local.
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b1837934-f10f-455d-92da-462ee88516a9) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Lovable syncs at repo root; backend lives in /backend.
